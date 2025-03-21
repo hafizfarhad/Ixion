@@ -6,3 +6,5 @@ npm install axios
 venv:
 pip install flask
 pip install flask-cors
+pip install python-dotenv pyjwt
+pip install bcrypt
