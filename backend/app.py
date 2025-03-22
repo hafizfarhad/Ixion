@@ -1,23 +1,30 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import jwt
+import bcrypt
 import datetime
 from dotenv import load_dotenv
 import os
 
-load_dotenv() 
+load_dotenv()
 
 app = Flask(__name__)
 CORS(app)
 app.config['JWT_SECRET'] = os.getenv('JWT_SECRET', 'fallback_secret_here')
+
+def hash_password(password: str) -> str:
+    return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
+
+def check_password(password: str, hashed: str) -> bool:
+    return bcrypt.checkpw(password.encode(), hashed.encode())
 
 # Login route
 @app.route('/api/login', methods=['POST'])
 def login():
     # Mock user database (replace with real DB later)
     valid_users = {
-        "admin@test.com": {"password": "secure123", "role": "admin"},
-        "user@test.com": {"password": "userpass", "role": "user"}
+        "admin@test.com": {"password": hash_password("secure123"), "role": "admin"},
+        "user@test.com": {"password": hash_password("userpass"), "role": "user"}
     }
 
     data = request.get_json()
@@ -29,7 +36,7 @@ def login():
 
     user = valid_users.get(email)
     
-    if not user or user['password'] != password:
+    if not user or not check_password(password, user['password_hash']):
         return jsonify({"error": "Invalid credentials"}), 401
 
     token = jwt.encode({
