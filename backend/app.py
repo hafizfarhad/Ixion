@@ -5,6 +5,8 @@ import bcrypt
 import datetime
 from dotenv import load_dotenv
 import os
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address 
 
 load_dotenv()
 
@@ -12,14 +14,25 @@ app = Flask(__name__)
 CORS(app)
 app.config['JWT_SECRET'] = os.getenv('JWT_SECRET', 'fallback_secret_here')
 
+# Password hashing functions
 def hash_password(password: str) -> str:
     return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
 
 def check_password(password: str, hashed: str) -> bool:
     return bcrypt.checkpw(password.encode(), hashed.encode())
 
+# Rate limiter configuration
+limiter = Limiter(
+    get_remote_address,
+    app=app,
+    default_limits=["200 per day", "50 per hour"],
+    storage_uri="memory://",
+)
+
+
 # Login route
 @app.route('/api/login', methods=['POST'])
+@limiter.limit("5/minute") # Rate limit login attempts
 def login():
     # Mock user database (replace with real DB later)
     valid_users = {
