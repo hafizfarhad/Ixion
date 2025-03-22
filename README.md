@@ -1,6 +1,8 @@
 ### Frontend
 npx create-next-app@latest frontend
 npm install axios
+npm install react-icons
+npm install @headlessui/react
 
 ### Backend
 venv:

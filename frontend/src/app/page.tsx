@@ -1,10 +1,20 @@
-import Image from 'next/image';
+
+import HeroSection from "../components/HeroSection";
+import FeatureSection from "../components/FeatureSection";
+import PricingSection from "../components/PricingSection";
+import StatsSection from "../components/StatsSection";
+import ContactSection from "../components/ContactSection";
+import FooterSection from "../components/FooterSection";
 
 export default function Home() {
   return (
-    <div className="container">
-      <h1>Home</h1>
-      <h1>Login</h1>
+    <div>
+      <HeroSection />
+      <StatsSection />
+      <FeatureSection />
+      <PricingSection />
+      <ContactSection />
+      <FooterSection />
     </div>
   );
 }
