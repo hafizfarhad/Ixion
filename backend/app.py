@@ -7,19 +7,20 @@ from dotenv import load_dotenv
 import os
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address 
+from models import db, User
 
 load_dotenv()
 
 app = Flask(__name__)
 CORS(app)
 app.config['JWT_SECRET'] = os.getenv('JWT_SECRET', 'fallback_secret_here')
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'postgresql://iamuser:iampass@localhost/ixios_db')
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+db.init_app(app)
 
-# Password hashing functions
-def hash_password(password: str) -> str:
-    return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
-
-def check_password(password: str, hashed: str) -> bool:
-    return bcrypt.checkpw(password.encode(), hashed.encode())
+# NEW: Create tables (run once)
+with app.app_context():
+    db.create_all()
 
 # Rate limiter configuration
 limiter = Limiter(
@@ -29,17 +30,40 @@ limiter = Limiter(
     storage_uri="memory://",
 )
 
+# Registration route
+@app.route('/api/register', methods=['POST'])
+@limiter.limit("3/minute") # Rate limit registration attempts
+def register():
+    data = request.get_json()
+    email = data.get('email')
+    password = data.get('password')
+    role = data.get('role', 'user')  # Default role is 'user'
+
+    if not email or not password:
+        return jsonify({"error": "Email and password are required"}), 400
+
+    # Check if user already exists
+    existing_user = User.query.filter_by(email=email).first()
+    if existing_user:
+        return jsonify({"error": "User already exists"}), 409
+
+    # Create new user
+    new_user = User(email=email, role=role)
+    new_user.set_password(password)
+    
+    try:
+        db.session.add(new_user)
+        db.session.commit()
+        return jsonify({"message": "User registered successfully"}), 201
+    except Exception as e:
+        db.session.rollback()
+        print(f"Registration error: {str(e)}")
+        return jsonify({"error": "Registration failed"}), 500
 
 # Login route
 @app.route('/api/login', methods=['POST'])
 @limiter.limit("5/minute") # Rate limit login attempts
 def login():
-    # Mock user database (replace with real DB later)
-    valid_users = {
-        "admin@test.com": {"password": hash_password("secure123"), "role": "admin"},
-        "user@test.com": {"password": hash_password("userpass"), "role": "user"}
-    }
-
     data = request.get_json()
     email = data.get('email')
     password = data.get('password')
@@ -47,14 +71,20 @@ def login():
     if not email or not password:
         return jsonify({"error": "Email and password are required"}), 400
 
-    user = valid_users.get(email)
+    user = User.query.filter_by(email=email).first()
     
-    if not user or not check_password(password, user['password_hash']):
+    # Add debug logging
+    if not user:
+        print(f"Login failed: User with email {email} not found")
+        return jsonify({"error": "Invalid credentials"}), 401
+    
+    if not user.check_password(password):
+        print(f"Login failed: Incorrect password for user {email}")
         return jsonify({"error": "Invalid credentials"}), 401
 
     token = jwt.encode({
         'email': email,
-        'role': user['role'],
+        'role': user.role,
         'exp': datetime.datetime.utcnow() + datetime.timedelta(
             seconds=int(os.getenv('JWT_EXPIRATION', 3600)))
     }, app.config['JWT_SECRET'], algorithm='HS256')
