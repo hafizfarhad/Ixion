@@ -1,0 +1,8 @@
+flask
+flask-cors
+python-dotenv
+pyjwt
+bcrypt
+flask-sqlalchemy
+psycopg2-binary
+flask-limiter

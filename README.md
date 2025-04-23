@@ -20,7 +20,13 @@ __venv:__
 `pip install flask-sqlalchemy psycopg2-binary`
 
 
-### Databse
+### Database
+
+`sudo systemctl status postgresql`
+
+`sudo systemctl start postgresql`
+
+`sudo systemctl start postgresql`
 
 `sudo -u postgres createdb ixios_db`
 
@@ -31,3 +37,8 @@ __venv:__
 `sudo -u postgres psql -c "ALTER USER iamuser WITH SUPERUSER;"`
 
 `psql -U iamuser -d ixios_db -c "SELECT * FROM user;"`
+
+
+
+### Target (Features) for IAM
+
