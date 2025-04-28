@@ -35,40 +35,52 @@ limiter = Limiter(
 @limiter.limit("3/minute") # Rate limit registration attempts
 def register():
     data = request.get_json()
+    
+    # Debug line to check incoming data
+    print(f"Registration request received: {data}")
+    
     email = data.get('email')
     password = data.get('password')
     role = data.get('role', 'user')  # Default role is 'user'
 
     if not email or not password:
+        print("Missing email or password")
         return jsonify({"error": "Email and password are required"}), 400
 
     # Check if user already exists
-    existing_user = User.query.filter_by(email=email).first()
-    if existing_user:
-        return jsonify({"error": "User already exists"}), 409
-
-    # Create new user
-    new_user = User(email=email, role=role)
-    new_user.set_password(password)
-    
     try:
+        existing_user = User.query.filter_by(email=email).first()
+        if existing_user:
+            print(f"User with email {email} already exists")
+            return jsonify({"error": "User already exists"}), 409
+
+        # Create new user
+        new_user = User(email=email, role=role)
+        new_user.set_password(password)
+        
         db.session.add(new_user)
         db.session.commit()
+        print(f"User {email} registered successfully")
         return jsonify({"message": "User registered successfully"}), 201
     except Exception as e:
         db.session.rollback()
         print(f"Registration error: {str(e)}")
-        return jsonify({"error": "Registration failed"}), 500
+        return jsonify({"error": "Registration failed", "message": str(e)}), 500
 
 # Login route
 @app.route('/api/login', methods=['POST'])
 @limiter.limit("5/minute") # Rate limit login attempts
 def login():
     data = request.get_json()
+    
+    # Debug line
+    print(f"Login request received: {data}")
+    
     email = data.get('email')
     password = data.get('password')
 
     if not email or not password:
+        print("Missing email or password")
         return jsonify({"error": "Email and password are required"}), 400
 
     user = User.query.filter_by(email=email).first()
@@ -82,6 +94,7 @@ def login():
         print(f"Login failed: Incorrect password for user {email}")
         return jsonify({"error": "Invalid credentials"}), 401
 
+    print(f"User {email} logged in successfully")
     token = jwt.encode({
         'email': email,
         'role': user.role,
@@ -117,4 +130,4 @@ def hello():
     return jsonify({"message": "Hello from IAM backend!"})
 
 if __name__ == '__main__':
-    app.run(port=5000, debug=True)
+    app.run(host='0.0.0.0', port=5000, debug=True)

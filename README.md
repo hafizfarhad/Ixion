@@ -42,3 +42,12 @@ __venv:__
 
 ### Target (Features) for IAM
 
+### To run docker-compose.yml
+
+sudo docker-compose build --no-cache
+
+sudo docker-compose up -d
+
+sudo docker ps -a
+
+sudo docker-compose down -v

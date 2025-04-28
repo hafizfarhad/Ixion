@@ -4,10 +4,10 @@ FROM node:19-alpine AS base
 WORKDIR /app
 
 # Copy package files
-COPY package.json package-lock.json* ./
+COPY package.json ./
 
-# Install dependencies
-RUN npm ci
+# Install dependencies - using npm install instead of npm ci to update lock file
+RUN npm install
 
 # Copy all files
 COPY . .
