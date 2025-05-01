@@ -1,5 +1,6 @@
 import "./globals.css";
 import type { Metadata } from 'next';
+import Providers from '@/components/Providers';
 
 export const metadata: Metadata = {
   title: 'Ixion - Identity and Access Management',
@@ -14,7 +15,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="min-h-screen flex flex-col bg-[#1c1c1c] text-white">
-        {children}
+        <Providers>
+          {children}
+        </Providers>
       </body>
     </html>
   );

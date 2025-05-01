@@ -3,32 +3,18 @@ FROM node:19-alpine AS base
 # Set working directory
 WORKDIR /app
 
-# Copy package files
-COPY package.json ./
+# Copy package files first for better caching
+COPY package.json package-lock.json* ./
 
-# Install dependencies - using npm install instead of npm ci to update lock file
+# Install dependencies
 RUN npm install
 
-# Copy all files
+# Copy the rest of the code
 COPY . .
 
-# Build the Next.js application
-RUN npm run build
-
-# Production image
-FROM node:19-alpine AS runner
-WORKDIR /app
-
 # Set environment variables
-ENV NODE_ENV production
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV NODE_ENV=development
 
-# Copy necessary files from build stage
-COPY --from=base /app/public ./public
-COPY --from=base /app/.next/static ./.next/static
-COPY --from=base /app/.next/standalone ./
-
-# Expose the port
-EXPOSE 3000
-
-# Run the application
-CMD ["node", "server.js"]
+# Use development mode for faster reloading during testing
+CMD ["npm", "run", "dev"]

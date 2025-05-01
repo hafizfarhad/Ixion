@@ -1,16 +1,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-
-interface SidebarLink {
-  label: string;
-  href: string;
-  icon?: React.ReactNode;
-}
-
-interface SidebarProps {
-  links: SidebarLink[];
-}
+import { SidebarProps } from '@/types';
 
 export default function Sidebar({ links }: SidebarProps) {
   const pathname = usePathname();

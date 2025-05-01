@@ -1,13 +1,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-
-interface HeaderProps {
-  showSignIn?: boolean;
-  showSignUp?: boolean;
-  showLogout?: boolean;
-  userName?: string;
-}
+import { HeaderProps } from '@/types';
 
 export default function Header({ showSignIn = false, showSignUp = false, showLogout = false, userName }: HeaderProps) {
   const router = useRouter();

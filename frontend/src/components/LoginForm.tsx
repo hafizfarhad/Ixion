@@ -2,6 +2,12 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { FormSubmitEvent, InputChangeEvent } from '@/types';
+
+// In browser environment, use the browser-specific API URL
+const API_URL = typeof window !== 'undefined' 
+  ? (process.env.NEXT_PUBLIC_BROWSER_API_URL || 'http://localhost:5000')
+  : (process.env.NEXT_PUBLIC_API_URL || 'http://backend:5000');
 
 interface LoginFormProps {
   // Any props can be added here if needed in the future
@@ -14,23 +20,67 @@ export default function LoginForm({}: LoginFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormSubmitEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError('');
     
     try {
-      const response = await axios.post('http://localhost:5000/api/login', {
+      console.log(`Attempting to login with API URL: ${API_URL}`);
+      
+      const response = await axios.post(`${API_URL}/api/login`, {
         email,
         password
+      }, {
+        // Add timeout and additional headers
+        timeout: 10000,
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        }
       });
       
+      console.log('Login response:', response.data);
+      
+      // Store the token in localStorage
       localStorage.setItem('jwtToken', response.data.token);
-      router.push('/dashboard');
+      
+      // Also store basic user info for quick access
+      localStorage.setItem('user', JSON.stringify(response.data.user));
+      
+      // Add a small delay before redirecting
+      setTimeout(() => {
+        router.push('/dashboard');
+      }, 100);
     } catch (err) {
-      setError('Invalid email or password');
+      console.error('Login error:', err);
+      
+      if (axios.isAxiosError(err)) {
+        if (err.code === 'ECONNABORTED') {
+          setError('Connection timeout. Please try again.');
+        } else if (err.response) {
+          // Server responded with an error status
+          setError(err.response.data?.error || 'Invalid email or password');
+        } else if (err.request) {
+          // Request was made but no response received
+          setError('Unable to reach the server. Please check your connection.');
+        } else {
+          setError('An error occurred during login. Please try again.');
+        }
+      } else {
+        setError('An unexpected error occurred.');
+      }
+      
       setIsLoading(false);
     }
+  };
+
+  const handleEmailChange = (e: InputChangeEvent) => {
+    setEmail(e.target.value);
+  };
+
+  const handlePasswordChange = (e: InputChangeEvent) => {
+    setPassword(e.target.value);
   };
 
   return (
@@ -49,7 +99,7 @@ export default function LoginForm({}: LoginFormProps) {
           id="email"
           type="email"
           value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          onChange={handleEmailChange}
           placeholder="your@email.com"
           className="w-full p-3 border rounded-lg bg-[#252525] border-[#3d3d3d] text-white focus:outline-none focus:ring-1 focus:ring-purple-500"
           required
@@ -69,7 +119,7 @@ export default function LoginForm({}: LoginFormProps) {
           id="password"
           type="password"
           value={password}
-          onChange={(e) => setPassword(e.target.value)}
+          onChange={handlePasswordChange}
           placeholder="Password"
           className="w-full p-3 border rounded-lg bg-[#252525] border-[#3d3d3d] text-white focus:outline-none focus:ring-1 focus:ring-purple-500"
           required

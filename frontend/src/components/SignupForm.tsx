@@ -1,12 +1,18 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { useRouter } from 'next/navigation';
+import { FormSubmitEvent, InputChangeEvent } from '@/types';
 
 interface SignupFormProps {
-  // Any props can be added here if needed in the future
+  isAdminSetup?: boolean;
 }
 
-export default function SignupForm({}: SignupFormProps) {
+// In browser environment, use the browser-specific API URL
+const API_URL = typeof window !== 'undefined' 
+  ? (process.env.NEXT_PUBLIC_BROWSER_API_URL || 'http://localhost:5000')
+  : (process.env.NEXT_PUBLIC_API_URL || 'http://backend:5000');
+
+export default function SignupForm({ isAdminSetup = false }: SignupFormProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -15,7 +21,7 @@ export default function SignupForm({}: SignupFormProps) {
   const [successMessage, setSuccessMessage] = useState('');
   const router = useRouter();
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormSubmitEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError('');
@@ -35,24 +41,39 @@ export default function SignupForm({}: SignupFormProps) {
     }
     
     try {
-      const response = await axios.post('http://localhost:5000/api/register', {
+      // Use consistent URL format whether in production or development
+      const registerUrl = `${API_URL}/api/register`;
+        
+      console.log(`Attempting to register at: ${registerUrl}`);
+      
+      const response = await axios.post(registerUrl, {
         email,
         password,
-        role: 'user' // Default role
+        role: isAdminSetup ? 'admin' : 'user', // Set role based on whether this is initial setup
+        isInitialSetup: isAdminSetup // Let the backend know this is the initial admin setup
       });
       
-      setSuccessMessage('Account created successfully! Redirecting to login...');
+      if (isAdminSetup) {
+        setSuccessMessage('Administrator account created successfully! Redirecting to login...');
+      } else {
+        setSuccessMessage('Account created successfully! Redirecting to login...');
+      }
       
       // Redirect to login after a short delay
       setTimeout(() => {
         router.push('/login');
       }, 2000);
-    } catch (err: any) {
-      if (err.response?.status === 409) {
+    } catch (err) {
+      console.error('Registration error:', err);
+      if (axios.isAxiosError(err) && err.response?.status === 409) {
         setError('User already exists with this email');
+      } else if (axios.isAxiosError(err) && err.response?.status === 403) {
+        setError('Initial setup has already been completed. Please contact an administrator.');
       } else {
-        setError(err.response?.data?.error || 'Failed to create account');
+        const errorMessage = axios.isAxiosError(err) ? err.response?.data?.error : 'Something went wrong';
+        setError(errorMessage || 'Failed to create account');
       }
+    } finally {
       setIsLoading(false);
     }
   };
@@ -123,7 +144,10 @@ export default function SignupForm({}: SignupFormProps) {
         disabled={isLoading}
         className="w-full p-3 bg-purple-600 hover:bg-purple-500 text-white rounded-lg transition-colors font-medium"
       >
-        {isLoading ? 'Creating account...' : 'Create account'}
+        {isLoading 
+          ? isAdminSetup ? 'Creating admin account...' : 'Creating account...' 
+          : isAdminSetup ? 'Create administrator account' : 'Create account'
+        }
       </button>
     </form>
   );

@@ -1,42 +1,62 @@
 version: '3'
 
 services:
-  database:
-    image: postgres:16
-    environment:
-      POSTGRES_DB: ixios_db
-      POSTGRES_USER: iamuser
-      POSTGRES_PASSWORD: iampass
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "5433:5432"
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U iamuser -d ixios_db"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-
   backend:
     build: ./backend
     ports:
       - "5000:5000"
     environment:
       - DATABASE_URL=postgresql://iamuser:iampass@database/ixios_db
-      - JWT_SECRET=my_secure_jwt_secret_change_in_production
+      - JWT_SECRET=your_secure_jwt_secret_here
+      - ADMIN_EMAIL=admin@ixion.com
+      - ADMIN_PASSWORD=securepassword123
       - JWT_EXPIRATION=3600
+      - FLASK_DEBUG=1
     depends_on:
       database:
         condition: service_healthy
+    volumes:
+      - ./backend:/app
+    networks:
+      - ixion-network
 
   frontend:
     build: ./frontend
     ports:
       - "3000:3000"
     environment:
-      - NEXT_PUBLIC_API_URL=http://localhost:5000
+      - NEXT_PUBLIC_API_URL=http://backend:5000  # Use container service name when accessed from inside container
+      - NEXT_PUBLIC_BROWSER_API_URL=http://localhost:5000  # For browser-side code to access API
     depends_on:
       - backend
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - /app/.next
+    networks:
+      - ixion-network
+
+  database:
+    image: postgres:16
+    environment:
+      - POSTGRES_USER=iamuser
+      - POSTGRES_PASSWORD=iampass
+      - POSTGRES_DB=ixios_db
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - ixion-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U iamuser -d ixios_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
 volumes:
   postgres_data:
+
+networks:
+  ixion-network:
+    driver: bridge

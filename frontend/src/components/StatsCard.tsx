@@ -1,16 +1,5 @@
 import React from 'react';
-
-interface StatsCardProps {
-  title: string;
-  value: string;
-  type?: 'default' | 'success' | 'warning' | 'danger';
-  icon?: React.ReactNode;
-  trend?: {
-    value: number;
-    isUpward: boolean;
-  };
-  period?: string;
-}
+import { StatsCardProps } from '@/types';
 
 export default function StatsCard({ 
   title, 
