@@ -361,6 +361,74 @@ def create_role(current_user):
         'role': new_role.to_dict()
     }), 201
 
+@bp.route('/roles/<role_id>', methods=['PUT'])
+@token_required
+@admin_required
+def update_role(current_user, role_id):
+    data = request.get_json()
+    
+    role = Role.query.get(role_id)
+    if not role:
+        return jsonify({'message': 'Role not found!'}), 404
+    
+    if 'name' in data:
+        role.name = data['name']
+    if 'description' in data:
+        role.description = data['description']
+    if 'permission_ids' in data:
+        permissions = Permission.query.filter(Permission.id.in_(data['permission_ids'])).all()
+        role.permissions = permissions
+    
+    db.session.commit()
+    
+    # Log the update
+    log = AuditLog(
+        user_id=current_user.id,
+        action='update',
+        resource_type='role',
+        resource_id=str(role.id),
+        details=f"Updated role {role.name}",
+        ip_address=request.remote_addr,
+        user_agent=request.headers.get('User-Agent')
+    )
+    db.session.add(log)
+    db.session.commit()
+    
+    return jsonify({
+        'message': 'Role updated successfully!',
+        'role': role.to_dict()
+    }), 200
+
+@bp.route('/roles/<role_id>', methods=['DELETE'])
+@token_required
+@admin_required
+def delete_role(current_user, role_id):
+    role = Role.query.get(role_id)
+    if not role:
+        return jsonify({'message': 'Role not found!'}), 404
+
+    # Prevent deletion of system roles
+    if role.is_system_role:
+        return jsonify({'message': 'System roles cannot be deleted!'}), 403
+
+    db.session.delete(role)
+    db.session.commit()
+
+    # Log the deletion
+    log = AuditLog(
+        user_id=current_user.id,
+        action='delete',
+        resource_type='role',
+        resource_id=str(role.id),
+        details=f"Deleted role {role.name}",
+        ip_address=request.remote_addr,
+        user_agent=request.headers.get('User-Agent')
+    )
+    db.session.add(log)
+    db.session.commit()
+
+    return jsonify({'message': 'Role deleted successfully!'}), 200
+
 # Invitation System Routes
 @bp.route('/invitations', methods=['POST'])
 @token_required

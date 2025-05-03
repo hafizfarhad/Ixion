@@ -164,6 +164,42 @@ const apiService = {
     
     return response.json();
   },
+
+  async updateRole(roleId, roleData) {
+    const token = localStorage.getItem('token');
+    const response = await fetch(`${API_BASE_URL}/roles/${roleId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify(roleData),
+    });
+  
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to update role');
+    }
+  
+    return response.json();
+  },
+
+  async deleteRole(roleId) {
+    const token = localStorage.getItem('token');
+    const response = await fetch(`${API_BASE_URL}/roles/${roleId}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+  
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to delete role');
+    }
+  
+    return response.json();
+  },
   
   // Invitation endpoints
   async getInvitations() {
