@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import './Navbar.css'; // Import a CSS file for styling
 
 function Navbar({ user, onLogout }) {
   const isAdmin = user && user.is_admin;
@@ -36,7 +37,7 @@ function Navbar({ user, onLogout }) {
         )}
         
         <li className="nav-item">
-          <button onClick={onLogout} className="nav-link" style={{ background: 'none', border: 'none' }}>
+          <button onClick={onLogout} className="nav-link logout-button">
             Logout
           </button>
         </li>

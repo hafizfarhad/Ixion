@@ -46,54 +46,59 @@ function InviteUser({ onLogin }) {
   };
 
   return (
-    <div>
-      <h1>Invite User</h1>
+    <div className="form-container">
+      <h1 className="form-title">Invite User</h1>
       {successMessage && <div className="alert alert-success">{successMessage}</div>}
       {error && <div className="alert alert-danger">{error}</div>}
       <form onSubmit={handleSubmit}>
-        <div>
+        <div className="form-group">
           <label>Email:</label>
           <input
             type="email"
             name="email"
+            className="form-control"
             value={formData.email}
             onChange={handleChange}
             required
           />
         </div>
-        <div>
+        <div className="form-group">
           <label>First Name:</label>
           <input
             type="text"
             name="first_name"
+            className="form-control"
             value={formData.first_name}
             onChange={handleChange}
           />
         </div>
-        <div>
+        <div className="form-group">
           <label>Last Name:</label>
           <input
             type="text"
             name="last_name"
+            className="form-control"
             value={formData.last_name}
             onChange={handleChange}
           />
         </div>
-        <div>
+        <div className="form-group">
           <label>Password:</label>
           <input
             type="password"
             name="password"
+            className="form-control"
             value={formData.password}
             onChange={handleChange}
             required
           />
         </div>
-        <div>
+        <div className="form-group">
           <label>Role IDs (comma-separated):</label>
           <input
             type="text"
             name="role_ids"
+            className="form-control"
             value={formData.role_ids}
             onChange={(e) =>
               setFormData({
@@ -103,7 +108,7 @@ function InviteUser({ onLogin }) {
             }
           />
         </div>
-        <button type="submit">Invite User</button>
+        <button type="submit" className="btn btn-primary btn-block">Invite User</button>
       </form>
     </div>
   );

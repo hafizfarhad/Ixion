@@ -55,50 +55,55 @@ function PermissionManagement() {
     <div>
       <h1>Permission Management</h1>
       {error && <div className="alert alert-danger">{error}</div>}
-      <form onSubmit={handleAddPermission}>
-        <div>
+      <form onSubmit={handleAddPermission} className="form-container">
+        <h2 className="form-title">Add Permission</h2>
+        <div className="form-group">
           <label>Name:</label>
           <input
             type="text"
             name="name"
+            className="form-control"
             value={newPermission.name}
             onChange={handleChange}
             required
           />
         </div>
-        <div>
+        <div className="form-group">
           <label>Description:</label>
           <input
             type="text"
             name="description"
+            className="form-control"
             value={newPermission.description}
             onChange={handleChange}
           />
         </div>
-        <div>
+        <div className="form-group">
           <label>Resource:</label>
           <input
             type="text"
             name="resource"
+            className="form-control"
             value={newPermission.resource}
             onChange={handleChange}
             required
           />
         </div>
-        <div>
+        <div className="form-group">
           <label>Action:</label>
           <input
             type="text"
             name="action"
+            className="form-control"
             value={newPermission.action}
             onChange={handleChange}
             required
           />
         </div>
-        <button type="submit">Add Permission</button>
+        <button type="submit" className="btn btn-primary btn-block">Add Permission</button>
       </form>
       <h2>Existing Permissions</h2>
-      <table>
+      <table className="table-container">
         <thead>
           <tr>
             <th>Name</th>

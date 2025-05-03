@@ -112,59 +112,63 @@ function RoleManagement() {
       <h1>Role Management</h1>
       {error && <div className="alert alert-danger">{error}</div>}
       {editingRole ? (
-        <form onSubmit={handleUpdateRole}>
-          <h2>Edit Role</h2>
-          <div>
+        <form onSubmit={handleUpdateRole} className="form-container">
+          <h2 className="form-title">Edit Role</h2>
+          <div className="form-group">
             <label>Name:</label>
             <input
               type="text"
               name="name"
+              className="form-control"
               value={editRoleData.name}
               onChange={handleEditRoleChange}
               required
             />
           </div>
-          <div>
+          <div className="form-group">
             <label>Description:</label>
             <input
               type="text"
               name="description"
+              className="form-control"
               value={editRoleData.description}
               onChange={handleEditRoleChange}
             />
           </div>
-          <button type="submit">Update Role</button>
-          <button type="button" onClick={cancelEditingRole}>
+          <button type="submit" className="btn btn-primary btn-block">Update Role</button>
+          <button type="button" className="btn btn-secondary btn-block" onClick={cancelEditingRole}>
             Cancel
           </button>
         </form>
       ) : (
-        <form onSubmit={handleAddRole}>
-          <h2>Create New Role</h2>
-          <div>
+        <form onSubmit={handleAddRole} className="form-container">
+          <h2 className="form-title">Create New Role</h2>
+          <div className="form-group">
             <label>Name:</label>
             <input
               type="text"
               name="name"
+              className="form-control"
               value={newRole.name}
               onChange={handleChange}
               required
             />
           </div>
-          <div>
+          <div className="form-group">
             <label>Description:</label>
             <input
               type="text"
               name="description"
+              className="form-control"
               value={newRole.description}
               onChange={handleChange}
             />
           </div>
-          <button type="submit">Add Role</button>
+          <button type="submit" className="btn btn-primary btn-block">Add Role</button>
         </form>
       )}
       <h2>Existing Roles</h2>
-      <table>
+      <table className="table-container">
         <thead>
           <tr>
             <th>ID</th> {/* Add a column for Role ID */}
@@ -180,8 +184,8 @@ function RoleManagement() {
               <td>{role.name}</td>
               <td>{role.description}</td>
               <td>
-                <button onClick={() => startEditingRole(role)}>Edit</button>
-                <button onClick={() => handleDeleteRole(role.id)}>Delete</button>
+                <button className="btn btn-secondary" onClick={() => startEditingRole(role)}>Edit</button>
+                <button className="btn btn-danger" onClick={() => handleDeleteRole(role.id)}>Delete</button>
               </td>
             </tr>
           ))}

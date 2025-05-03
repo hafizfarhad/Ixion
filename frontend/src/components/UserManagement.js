@@ -128,37 +128,40 @@ function UserManagement() {
       
       {error && <div className="alert alert-danger">{error}</div>}
       
-      <form onSubmit={handleCreateUser}>
-        <h2>Create New User</h2>
-        <div>
+      <form onSubmit={handleCreateUser} className="form-container">
+        <h2 className="form-title">Create New User</h2>
+        <div className="form-group">
           <label>Email:</label>
           <input
             type="email"
             name="email"
+            className="form-control"
             value={newUser.email}
             onChange={handleNewUserChange}
             required
           />
         </div>
-        <div>
+        <div className="form-group">
           <label>First Name:</label>
           <input
             type="text"
             name="first_name"
+            className="form-control"
             value={newUser.first_name}
             onChange={handleNewUserChange}
           />
         </div>
-        <div>
+        <div className="form-group">
           <label>Last Name:</label>
           <input
             type="text"
             name="last_name"
+            className="form-control"
             value={newUser.last_name}
             onChange={handleNewUserChange}
           />
         </div>
-        <div>
+        <div className="form-group">
           <label>
             <input
               type="checkbox"
@@ -169,7 +172,7 @@ function UserManagement() {
             Active
           </label>
         </div>
-        <div>
+        <div className="form-group">
           <label>
             <input
               type="checkbox"
@@ -180,17 +183,18 @@ function UserManagement() {
             Admin
           </label>
         </div>
-        <div>
+        <div className="form-group">
           <label>Password:</label>
           <input
             type="password"
             name="password"
+            className="form-control"
             value={newUser.password}
             onChange={handleNewUserChange}
             required
           />
         </div>
-        <button type="submit">Create User</button>
+        <button type="submit" className="btn btn-primary btn-block">Create User</button>
       </form>
 
       {editingUser ? (
@@ -253,7 +257,7 @@ function UserManagement() {
       ) : (
         <div>
           <h2>Users</h2>
-          <table>
+          <table className="table-container">
             <thead>
               <tr>
                 <th>First Name</th>
@@ -271,8 +275,8 @@ function UserManagement() {
                   <td>{user.is_active ? 'Yes' : 'No'}</td>
                   <td>{user.is_admin ? 'Yes' : 'No'}</td>
                   <td>
-                    <button onClick={() => startEditing(user)}>Edit</button>
-                    <button onClick={() => handleDelete(user.id)}>Delete</button>
+                    <button className="btn btn-secondary" onClick={() => startEditing(user)}>Edit</button>
+                    <button className="btn btn-danger" onClick={() => handleDelete(user.id)}>Delete</button>
                   </td>
                 </tr>
               ))}

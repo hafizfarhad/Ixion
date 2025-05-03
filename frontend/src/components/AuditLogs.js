@@ -29,7 +29,7 @@ function AuditLogs() {
     <div>
       <h1>Audit Logs</h1>
       {error && <div className="alert alert-danger">{error}</div>}
-      <table>
+      <table className="table-container">
         <thead>
           <tr>
             <th>Timestamp</th>
