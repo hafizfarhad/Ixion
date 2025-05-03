@@ -20,10 +20,11 @@ def token_required(f):
         token = None
         auth_header = request.headers.get('Authorization')
         
-        if (auth_header and auth_header.startswith('Bearer ')):
+        if auth_header and auth_header.startswith('Bearer '):
             token = auth_header.split(' ')[1]
         
         if not token:
+            print("DEBUG: Authentication token is missing!")  # Debug log
             return jsonify({'message': 'Authentication token is missing!'}), 401
         
         try:
@@ -32,13 +33,17 @@ def token_required(f):
             current_user = User.query.get(data['user_id'])
             
             if not current_user:
+                print("DEBUG: Invalid authentication token!")  # Debug log
                 return jsonify({'message': 'Invalid authentication token!'}), 401
                 
         except jwt.ExpiredSignatureError:
+            print("DEBUG: Token has expired!")  # Debug log
             return jsonify({'message': 'Token has expired!'}), 401
         except jwt.InvalidTokenError:
+            print("DEBUG: Invalid token!")  # Debug log
             return jsonify({'message': 'Invalid token!'}), 401
             
+        print(f"DEBUG: Token validated for user {current_user.email}")  # Debug log
         return f(current_user, *args, **kwargs)
     
     return decorated
@@ -253,6 +258,53 @@ def delete_user(current_user, user_id):
     db.session.commit()
     
     return jsonify({'message': 'User deleted successfully!'}), 200
+
+@bp.route('/users', methods=['POST'])
+@token_required
+@admin_required
+def create_user(current_user):
+    data = request.get_json()
+    
+    if not data or not data.get('email') or not data.get('password'):
+        return jsonify({'message': 'Email and password are required!'}), 400
+    
+    # Check if email already exists
+    existing_user = User.query.filter_by(email=data['email']).first()
+    if existing_user:
+        return jsonify({'message': 'User with this email already exists!'}), 409
+    
+    # Create new user
+    new_user = User(
+        email=data['email'],
+        first_name=data.get('first_name'),
+        last_name=data.get('last_name'),
+        is_active=data.get('is_active', True),
+        is_admin=data.get('is_admin', False)
+    )
+    new_user.set_password(data['password'])
+    
+    # Assign roles if provided
+    if 'role_ids' in data:
+        roles = Role.query.filter(Role.id.in_(data['role_ids'])).all()
+        new_user.roles = roles
+    
+    db.session.add(new_user)
+    db.session.commit()
+    
+    # Log the creation
+    log = AuditLog(
+        user_id=current_user.id,
+        action='create',
+        resource_type='user',
+        resource_id=str(new_user.id),
+        details=f"Created user {data['email']}",
+        ip_address=request.remote_addr,
+        user_agent=request.headers.get('User-Agent')
+    )
+    db.session.add(log)
+    db.session.commit()
+    
+    return jsonify({'message': 'User created successfully!', 'user': new_user.to_dict()}), 201
 
 # Role management routes
 @bp.route('/roles', methods=['GET'])

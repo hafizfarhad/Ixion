@@ -13,6 +13,15 @@ function UserManagement() {
     is_admin: false,
     password: ''
   });
+  const [newUser, setNewUser] = useState({
+    email: '',
+    first_name: '',
+    last_name: '',
+    is_active: true,
+    is_admin: false,
+    password: '',
+    role_ids: []
+  });
   
   useEffect(() => {
     fetchUsers();
@@ -35,6 +44,14 @@ function UserManagement() {
     const { name, value, type, checked } = e.target;
     setFormData({
       ...formData,
+      [name]: type === 'checkbox' ? checked : value
+    });
+  };
+
+  const handleNewUserChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setNewUser({
+      ...newUser,
       [name]: type === 'checkbox' ? checked : value
     });
   };
@@ -71,6 +88,26 @@ function UserManagement() {
       setError(err.message);
     }
   };
+
+  const handleCreateUser = async (e) => {
+    e.preventDefault();
+    try {
+      await apiService.createUser(newUser);
+      fetchUsers(); // Refresh the list
+      setNewUser({
+        email: '',
+        first_name: '',
+        last_name: '',
+        is_active: true,
+        is_admin: false,
+        password: '',
+        role_ids: []
+      });
+      setError('');
+    } catch (err) {
+      setError(err.message);
+    }
+  };
   
   const handleDelete = async (userId) => {
     if (!window.confirm('Are you sure you want to delete this user?')) return;
@@ -91,6 +128,71 @@ function UserManagement() {
       
       {error && <div className="alert alert-danger">{error}</div>}
       
+      <form onSubmit={handleCreateUser}>
+        <h2>Create New User</h2>
+        <div>
+          <label>Email:</label>
+          <input
+            type="email"
+            name="email"
+            value={newUser.email}
+            onChange={handleNewUserChange}
+            required
+          />
+        </div>
+        <div>
+          <label>First Name:</label>
+          <input
+            type="text"
+            name="first_name"
+            value={newUser.first_name}
+            onChange={handleNewUserChange}
+          />
+        </div>
+        <div>
+          <label>Last Name:</label>
+          <input
+            type="text"
+            name="last_name"
+            value={newUser.last_name}
+            onChange={handleNewUserChange}
+          />
+        </div>
+        <div>
+          <label>
+            <input
+              type="checkbox"
+              name="is_active"
+              checked={newUser.is_active}
+              onChange={handleNewUserChange}
+            />
+            Active
+          </label>
+        </div>
+        <div>
+          <label>
+            <input
+              type="checkbox"
+              name="is_admin"
+              checked={newUser.is_admin}
+              onChange={handleNewUserChange}
+            />
+            Admin
+          </label>
+        </div>
+        <div>
+          <label>Password:</label>
+          <input
+            type="password"
+            name="password"
+            value={newUser.password}
+            onChange={handleNewUserChange}
+            required
+          />
+        </div>
+        <button type="submit">Create User</button>
+      </form>
+
       {editingUser ? (
         <form onSubmit={handleSubmit}>
           <h2>Edit User</h2>
