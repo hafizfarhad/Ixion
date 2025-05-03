@@ -7,7 +7,9 @@ function PermissionManagement() {
   const [error, setError] = useState('');
   const [newPermission, setNewPermission] = useState({
     name: '',
-    description: ''
+    description: '',
+    resource: '',
+    action: ''
   });
 
   useEffect(() => {
@@ -40,7 +42,7 @@ function PermissionManagement() {
     try {
       await apiService.createPermission(newPermission);
       fetchPermissions(); // Refresh the list
-      setNewPermission({ name: '', description: '' });
+      setNewPermission({ name: '', description: '', resource: '', action: '' });
       setError('');
     } catch (err) {
       setError(err.message);
@@ -73,6 +75,26 @@ function PermissionManagement() {
             onChange={handleChange}
           />
         </div>
+        <div>
+          <label>Resource:</label>
+          <input
+            type="text"
+            name="resource"
+            value={newPermission.resource}
+            onChange={handleChange}
+            required
+          />
+        </div>
+        <div>
+          <label>Action:</label>
+          <input
+            type="text"
+            name="action"
+            value={newPermission.action}
+            onChange={handleChange}
+            required
+          />
+        </div>
         <button type="submit">Add Permission</button>
       </form>
       <h2>Existing Permissions</h2>
@@ -81,6 +103,8 @@ function PermissionManagement() {
           <tr>
             <th>Name</th>
             <th>Description</th>
+            <th>Resource</th>
+            <th>Action</th>
           </tr>
         </thead>
         <tbody>
@@ -88,6 +112,8 @@ function PermissionManagement() {
             <tr key={permission.id}>
               <td>{permission.name}</td>
               <td>{permission.description}</td>
+              <td>{permission.resource}</td>
+              <td>{permission.action}</td>
             </tr>
           ))}
         </tbody>

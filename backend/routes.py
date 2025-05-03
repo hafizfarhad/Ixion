@@ -597,4 +597,43 @@ def accept_invitation():
         'user': new_user.to_dict()
     }), 201
 
-# Additional routes for permissions, logs, access requests, etc. would go here
+@bp.route('/permissions', methods=['GET'])
+@token_required
+@admin_required
+def get_permissions(current_user):
+    try:
+        permissions = Permission.query.all()
+        return jsonify([permission.to_dict() for permission in permissions]), 200
+    except Exception as e:
+        return jsonify({'message': 'Failed to fetch permissions', 'error': str(e)}), 500
+
+@bp.route('/permissions', methods=['POST'])
+@token_required
+@admin_required
+def create_permission(current_user):
+    data = request.get_json()
+
+    if not data or not data.get('name') or not data.get('resource') or not data.get('action'):
+        return jsonify({'message': 'Name, resource, and action are required!'}), 400
+
+    # Check if permission already exists
+    existing_permission = Permission.query.filter_by(
+        name=data['name']
+    ).first()
+    if existing_permission:
+        return jsonify({'message': 'Permission already exists!'}), 409
+
+    new_permission = Permission(
+        name=data['name'],
+        description=data.get('description'),
+        resource=data['resource'],
+        action=data['action']
+    )
+
+    db.session.add(new_permission)
+    db.session.commit()
+
+    return jsonify({
+        'message': 'Permission created successfully!',
+        'permission': new_permission.to_dict()
+    }), 201

@@ -200,6 +200,41 @@ const apiService = {
   
     return response.json();
   },
+
+  async getPermissions() {
+    const token = localStorage.getItem('token');
+    const response = await fetch(`${API_BASE_URL}/permissions`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to fetch permissions');
+    }
+
+    return response.json();
+  },
+
+  async createPermission(permissionData) {
+    const token = localStorage.getItem('token');
+    const response = await fetch(`${API_BASE_URL}/permissions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify(permissionData),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to create permission');
+    }
+
+    return response.json();
+  },
   
   // Invitation endpoints
   async getInvitations() {
