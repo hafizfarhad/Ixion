@@ -1,8 +1,6 @@
-# IXIOS IAM - Identity and Access Management System
+# IXION IAM - Identity and Access Management System
 
-![IXIOS IAM Logo](https://via.placeholder.com/200x80?text=IXIOS+IAM)
-
-IXIOS IAM is a comprehensive Identity and Access Management solution designed to provide secure authentication, authorization, and user management for modern applications. Built with Flask and React, it offers a robust and scalable approach to managing user identities and permissions.
+IXION IAM is a comprehensive Identity and Access Management solution designed to provide secure authentication, authorization, and user management for modern applications. Built with Flask and React, it offers a robust and scalable approach to managing user identities and permissions.
 
 ## Table of Contents
 - [Features](#features)
@@ -23,7 +21,7 @@ IXIOS IAM is a comprehensive Identity and Access Management solution designed to
 
 ## Features
 
-IXIOS IAM provides a comprehensive set of identity and access management features:
+IXION IAM provides a set of identity and access management features:
 
 ### Authentication
 - **User Login/Signup**: Secure email and password authentication
@@ -57,7 +55,7 @@ IXIOS IAM provides a comprehensive set of identity and access management feature
 
 ## System Architecture
 
-IXIOS IAM follows a modern web application architecture with separated frontend and backend components.
+IXION IAM follows a modern web application architecture with separated frontend and backend components.
 
 ### High-Level Architecture
 
@@ -96,7 +94,7 @@ The React frontend consists of:
 
 ```
 ┌───────────────────────────────────────────────────────┐
-│                    Flask Application                   │
+│                    Flask Application                  │
 │                                                       │
 │  ┌───────────┐   ┌───────────┐    ┌───────────────┐   │
 │  │           │   │           │    │               │   │
@@ -118,7 +116,7 @@ The React frontend consists of:
 
 ```
 ┌───────────────────────────────────────────────────────┐
-│                   React Application                    │
+│                   React Application                   │
 │                                                       │
 │  ┌───────────┐   ┌───────────┐    ┌───────────────┐   │
 │  │           │   │           │    │               │   │
@@ -250,7 +248,7 @@ The React frontend consists of:
      │                │                │                │
      │                │                │ 7. Access      │
      │                │                │ Invitation Link│
-     │                │◀───────────────────────────────│
+     │                │◀────────────────────────────────│
      │                │                │                │
      │                │ 8. Validate    │                │
      │                │ Token          │                │
@@ -260,13 +258,13 @@ The React frontend consists of:
      │                │                │                │
      │                │ 10. Return     │                │
      │                │ JWT Token      │                │
-     │                │───────────────────────────────▶│
+     │                │────────────────────────────────▶│
      │                │                │                │
 ```
 
 ## Database Schema
 
-IXIOS IAM uses a relational database with the following key entities:
+IXION IAM uses a relational database with the following key entities:
 
 ### Entity Relationship Diagram
 
@@ -282,15 +280,15 @@ IXIOS IAM uses a relational database with the following key entities:
 │ is_active   │                                    ▲
 │ is_admin    │                                    │
 │ created_at  │                                    │
-│ updated_at  │       ┌─────────────┐       ┌─────────────┐
-│ last_login  │       │    Role     │       │ Permissions │
-└─────────────┘       │ Permissions │       ├─────────────┤
-      ▲               ├─────────────┤       │ id          │
-      │               │ role_id     │       │ name        │
+│ updated_at  │       ┌──────────────┐       ┌─────────────┐
+│ last_login  │       │    Role      │       │ Permissions │
+└─────────────┘       │ Permissions  │       ├─────────────┤
+      ▲               ├──────────────┤       │ id          │
+      │               │ role_id      │       │ name        │
       │               │ permission_id│◀─────▶│ description │
-      │               └─────────────┘       │ resource    │
-      │                                     │ action      │
-      │                                     └─────────────┘
+      │               └──────────────┘       │ resource    │
+      │                                      │ action      │
+      │                                      └─────────────┘
       │
       │               ┌─────────────┐
       │               │ Invitations │
@@ -321,7 +319,7 @@ IXIOS IAM uses a relational database with the following key entities:
 
 ## API Documentation
 
-IXIOS IAM exposes a RESTful API for authentication, user management, and access control.
+IXION IAM exposes a RESTful API for authentication, user management, and access control.
 
 ### Authentication Endpoints
 
@@ -387,14 +385,14 @@ IXIOS IAM exposes a RESTful API for authentication, user management, and access 
 1. **Clone the repository**
 
 ```bash
-git clone https://github.com/yourusername/ixios-iam.git
-cd ixios-iam/backend
+git clone https://github.com/hafizfarhad/Ixion.git
+cd Ixion/backend
 ```
 
 2. **Create and activate a virtual environment**
 
 ```bash
-python -m venv venv
+python -m venv Ixion-venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 ```
 
@@ -410,7 +408,7 @@ Create a `.env` file in the backend directory:
 
 ```
 JWT_SECRET=your_secure_jwt_secret_key
-DATABASE_URL=postgresql://username:password@localhost/ixios_db
+DATABASE_URL=postgresql://username:password@localhost/IXION_db
 ADMIN_EMAIL=admin@example.com
 ADMIN_PASSWORD=your_admin_password
 ```
@@ -419,7 +417,7 @@ ADMIN_PASSWORD=your_admin_password
 
 ```bash
 # Create the PostgreSQL database
-createdb ixios_db
+createdb IXION_db
 
 # Initialize database schema and default roles
 python app.py
@@ -469,7 +467,7 @@ For containerized deployment, use Docker Compose:
 
 ```bash
 # From the project root
-docker-compose up -d
+docker-compose up -d # If you get permission error - use `sudo`
 ```
 
 This will start both the frontend and backend services along with a PostgreSQL database.
@@ -481,7 +479,7 @@ This will start both the frontend and backend services along with a PostgreSQL d
 | Variable | Description | Default |
 |----------|-------------|---------|
 | `JWT_SECRET` | Secret key for JWT token signing | fallback_secret_here |
-| `DATABASE_URL` | PostgreSQL connection string | postgresql://iamuser:iampass@localhost/ixios_db |
+| `DATABASE_URL` | PostgreSQL connection string | postgresql://iamuser:iampass@localhost/IXION_db |
 | `ADMIN_EMAIL` | Default admin email | admin@ixion.com |
 | `ADMIN_PASSWORD` | Default admin password | admin123 |
 
@@ -528,7 +526,7 @@ Administrators can:
 
 ## Security Considerations
 
-IXIOS IAM implements several security features, but consider the following best practices:
+IXION IAM implements several security features, but consider the following best practices:
 
 1. **Use strong secrets**: Replace the default JWT secret with a strong, randomly generated value
 2. **Secure communications**: Use HTTPS in production environments
@@ -539,7 +537,7 @@ IXIOS IAM implements several security features, but consider the following best 
 
 ## Development Roadmap
 
-Future enhancements planned for IXIOS IAM:
+Future enhancements planned for IXION IAM:
 
 - Multi-factor authentication (MFA)
 - Social login integration
@@ -561,8 +559,8 @@ Contributions are welcome! Please follow these steps:
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is licensed under the MIT License - see the [LICENSE](https://github.com/hafizfarhad/Ixion/blob/main/LICENSE) file for details.
 
 ---
 
-© 2025 IXIOS IAM Project
+© 2025 IXION IAM Project
