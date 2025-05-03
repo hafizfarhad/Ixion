@@ -3,7 +3,7 @@ const API_BASE_URL = 'http://localhost:5000/api';
 const apiService = {
   // Auth endpoints
   async login(email, password) {
-    const response = await fetch(`${API_BASE_URL}/login`, {
+    const response = await fetch(`${API_BASE_URL}/auth/login`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -20,7 +20,7 @@ const apiService = {
   },
   
   async register(email, password, firstName, lastName) {
-    const response = await fetch(`${API_BASE_URL}/register`, {
+    const response = await fetch(`${API_BASE_URL}/auth/register`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -44,7 +44,7 @@ const apiService = {
   // User endpoints
   async getUsers() {
     const token = localStorage.getItem('token');
-    const response = await fetch(`${API_BASE_URL}/iam/users`, {
+    const response = await fetch(`${API_BASE_URL}/users`, {
       headers: {
         'Authorization': `Bearer ${token}`,
       },
@@ -60,7 +60,7 @@ const apiService = {
   
   async getUser(userId) {
     const token = localStorage.getItem('token');
-    const response = await fetch(`${API_BASE_URL}/iam/users/${userId}`, {
+    const response = await fetch(`${API_BASE_URL}/users/${userId}`, {
       headers: {
         'Authorization': `Bearer ${token}`,
       },
@@ -76,7 +76,7 @@ const apiService = {
   
   async updateUser(userId, userData) {
     const token = localStorage.getItem('token');
-    const response = await fetch(`${API_BASE_URL}/iam/users/${userId}`, {
+    const response = await fetch(`${API_BASE_URL}/users/${userId}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -95,7 +95,7 @@ const apiService = {
   
   async deleteUser(userId) {
     const token = localStorage.getItem('token');
-    const response = await fetch(`${API_BASE_URL}/iam/users/${userId}`, {
+    const response = await fetch(`${API_BASE_URL}/users/${userId}`, {
       method: 'DELETE',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -113,7 +113,7 @@ const apiService = {
   // Role endpoints
   async getRoles() {
     const token = localStorage.getItem('token');
-    const response = await fetch(`${API_BASE_URL}/iam/roles`, {
+    const response = await fetch(`${API_BASE_URL}/roles`, {
       headers: {
         'Authorization': `Bearer ${token}`,
       },
@@ -129,7 +129,7 @@ const apiService = {
   
   async createRole(roleData) {
     const token = localStorage.getItem('token');
-    const response = await fetch(`${API_BASE_URL}/iam/roles`, {
+    const response = await fetch(`${API_BASE_URL}/roles`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -149,7 +149,7 @@ const apiService = {
   // Invitation endpoints
   async getInvitations() {
     const token = localStorage.getItem('token');
-    const response = await fetch(`${API_BASE_URL}/iam/invitations`, {
+    const response = await fetch(`${API_BASE_URL}/invitations`, {
       headers: {
         'Authorization': `Bearer ${token}`,
       },
@@ -165,7 +165,7 @@ const apiService = {
   
   async createInvitation(invitationData) {
     const token = localStorage.getItem('token');
-    const response = await fetch(`${API_BASE_URL}/iam/invitations`, {
+    const response = await fetch(`${API_BASE_URL}/invitations`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -184,7 +184,7 @@ const apiService = {
   
   async revokeInvitation(invitationId) {
     const token = localStorage.getItem('token');
-    const response = await fetch(`${API_BASE_URL}/iam/invitations/${invitationId}`, {
+    const response = await fetch(`${API_BASE_URL}/invitations/${invitationId}`, {
       method: 'DELETE',
       headers: {
         'Authorization': `Bearer ${token}`,

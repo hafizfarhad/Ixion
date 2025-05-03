@@ -21,7 +21,7 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db.init_app(app)
 
 # Register the IAM blueprint
-app.register_blueprint(bp, url_prefix='/api/iam')
+app.register_blueprint(bp, url_prefix='/api')
 
 # Rate limiter configuration
 limiter = Limiter(
@@ -143,98 +143,6 @@ def initialize_db():
         db.session.commit()
         print(f"Admin user {admin_email} created/updated successfully")
         print("Database initialized with default roles and permissions")
-
-# Registration route
-@app.route('/api/register', methods=['POST'])
-@limiter.limit("3/minute") # Rate limit registration attempts
-def register():
-    data = request.get_json()
-    
-    # Debug line to check incoming data
-    print(f"Registration request received: {data}")
-    
-    email = data.get('email')
-    password = data.get('password')
-    role = data.get('role', 'user')  # Default role is 'user'
-
-    if not email or not password:
-        print("Missing email or password")
-        return jsonify({"error": "Email and password are required"}), 400
-
-    # Check if user already exists
-    try:
-        existing_user = User.query.filter_by(email=email).first()
-        if existing_user:
-            print(f"User with email {email} already exists")
-            return jsonify({"error": "User already exists"}), 409
-
-        # Create new user
-        new_user = User(email=email, role=role)
-        new_user.set_password(password)
-        
-        # Add default user role
-        default_role = Role.query.filter_by(name='user').first()
-        if default_role:
-            new_user.roles.append(default_role)
-        
-        db.session.add(new_user)
-        db.session.commit()
-        print(f"User {email} registered successfully")
-        return jsonify({"message": "User registered successfully"}), 201
-    except Exception as e:
-        db.session.rollback()
-        print(f"Registration error: {str(e)}")
-        return jsonify({"error": "Registration failed", "message": str(e)}), 500
-
-# Login route
-@app.route('/api/login', methods=['POST'])
-@limiter.limit("5/minute") # Rate limit login attempts
-def login():
-    data = request.get_json()
-    
-    # Debug line
-    print(f"Login request received: {data}")
-    
-    email = data.get('email')
-    password = data.get('password')
-
-    if not email or not password:
-        print("Missing email or password")
-        return jsonify({"error": "Email and password are required"}), 400
-
-    user = User.query.filter_by(email=email).first()
-    
-    # Add debug logging
-    if not user:
-        print(f"Login failed: User with email {email} not found")
-        return jsonify({"error": "Invalid credentials"}), 401
-    
-    if not user.check_password(password):
-        print(f"Login failed: Incorrect password for user {email}")
-        return jsonify({"error": "Invalid credentials"}), 401
-
-    # Update last login timestamp
-    user.last_login = datetime.datetime.utcnow()
-    db.session.commit()
-
-    print(f"User {email} logged in successfully")
-    
-    # Use the user model method to generate token
-    token = user.generate_auth_token(
-        expiration=int(os.getenv('JWT_EXPIRATION', 3600))
-    )
-
-    return jsonify({
-        "token": token,
-        "user": {
-            "id": str(user.id),  # Convert UUID to string
-            "email": user.email,
-            "first_name": user.first_name,
-            "last_name": user.last_name,
-            "roles": [role.name for role in user.roles],
-            "is_admin": user.is_admin
-        }
-    })
 
 # Flask middleware for protected routes
 @app.route('/api/protected')
