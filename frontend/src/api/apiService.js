@@ -1,0 +1,215 @@
+const API_BASE_URL = 'http://localhost:5000/api';
+
+const apiService = {
+  // Auth endpoints
+  async login(email, password) {
+    const response = await fetch(`${API_BASE_URL}/login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ email, password }),
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Login failed');
+    }
+    
+    return response.json();
+  },
+  
+  async register(email, password, firstName, lastName) {
+    const response = await fetch(`${API_BASE_URL}/register`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ 
+        email, 
+        password,
+        first_name: firstName,
+        last_name: lastName
+      }),
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Registration failed');
+    }
+    
+    return response.json();
+  },
+  
+  // User endpoints
+  async getUsers() {
+    const token = localStorage.getItem('token');
+    const response = await fetch(`${API_BASE_URL}/iam/users`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to fetch users');
+    }
+    
+    return response.json();
+  },
+  
+  async getUser(userId) {
+    const token = localStorage.getItem('token');
+    const response = await fetch(`${API_BASE_URL}/iam/users/${userId}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to fetch user');
+    }
+    
+    return response.json();
+  },
+  
+  async updateUser(userId, userData) {
+    const token = localStorage.getItem('token');
+    const response = await fetch(`${API_BASE_URL}/iam/users/${userId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify(userData),
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to update user');
+    }
+    
+    return response.json();
+  },
+  
+  async deleteUser(userId) {
+    const token = localStorage.getItem('token');
+    const response = await fetch(`${API_BASE_URL}/iam/users/${userId}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to delete user');
+    }
+    
+    return response.json();
+  },
+  
+  // Role endpoints
+  async getRoles() {
+    const token = localStorage.getItem('token');
+    const response = await fetch(`${API_BASE_URL}/iam/roles`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to fetch roles');
+    }
+    
+    return response.json();
+  },
+  
+  async createRole(roleData) {
+    const token = localStorage.getItem('token');
+    const response = await fetch(`${API_BASE_URL}/iam/roles`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify(roleData),
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to create role');
+    }
+    
+    return response.json();
+  },
+  
+  // Invitation endpoints
+  async getInvitations() {
+    const token = localStorage.getItem('token');
+    const response = await fetch(`${API_BASE_URL}/iam/invitations`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to fetch invitations');
+    }
+    
+    return response.json();
+  },
+  
+  async createInvitation(invitationData) {
+    const token = localStorage.getItem('token');
+    const response = await fetch(`${API_BASE_URL}/iam/invitations`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify(invitationData),
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to create invitation');
+    }
+    
+    return response.json();
+  },
+  
+  async revokeInvitation(invitationId) {
+    const token = localStorage.getItem('token');
+    const response = await fetch(`${API_BASE_URL}/iam/invitations/${invitationId}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to revoke invitation');
+    }
+    
+    return response.json();
+  },
+  
+  // System status
+  async getSystemStatus() {
+    const response = await fetch(`${API_BASE_URL}/system/status`);
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to fetch system status');
+    }
+    
+    return response.json();
+  },
+};
+
+export default apiService;

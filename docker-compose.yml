@@ -7,7 +7,7 @@ services:
       - "5000:5000"
     environment:
       - DATABASE_URL=postgresql://iamuser:iampass@database/ixios_db
-      - JWT_SECRET=your_secure_jwt_secret_here
+      - JWT_SECRET=your_secure_jwt_secret_here  # Ensure this matches the secret used in the code
       - ADMIN_EMAIL=admin@ixion.com
       - ADMIN_PASSWORD=securepassword123
       - JWT_EXPIRATION=3600
@@ -21,21 +21,16 @@ services:
       - ixion-network
 
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
     ports:
-      - "3000:3000"
-    environment:
-      - NEXT_PUBLIC_API_URL=http://backend:5000  # Use container service name when accessed from inside container
-      - NEXT_PUBLIC_BROWSER_API_URL=http://localhost:5000  # For browser-side code to access API
+      - "3000:80"  # Map port 3000 on the host to port 80 in the container
     depends_on:
       - backend
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
-      - /app/.next
     networks:
       - ixion-network
-
+    
   database:
     image: postgres:16
     environment:

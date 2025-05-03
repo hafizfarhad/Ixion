@@ -6,8 +6,12 @@ import jwt
 from models import db, User, Role, Permission, AuditLog, AccessRequest, UserInvitation
 from functools import wraps
 import os
+from flask_cors import CORS
 
 bp = Blueprint('api', __name__)
+
+# Enable CORS for all routes
+CORS(bp, resources={r"/*": {"origins": "*"}})  # Allow all origins for testing
 
 # Authentication middleware
 def token_required(f):
@@ -16,14 +20,15 @@ def token_required(f):
         token = None
         auth_header = request.headers.get('Authorization')
         
-        if auth_header and auth_header.startswith('Bearer '):
+        if (auth_header and auth_header.startswith('Bearer ')):
             token = auth_header.split(' ')[1]
         
         if not token:
             return jsonify({'message': 'Authentication token is missing!'}), 401
         
         try:
-            data = jwt.decode(token, os.environ.get('JWT_SECRET_KEY'), algorithms=['HS256'])
+            # Decode the JWT token using the standardized JWT_SECRET
+            data = jwt.decode(token, os.environ.get('JWT_SECRET'), algorithms=['HS256'])
             current_user = User.query.get(data['user_id'])
             
             if not current_user:
@@ -56,7 +61,7 @@ def login():
     if not data or not data.get('email') or not data.get('password'):
         return jsonify({'message': 'Missing email or password!'}), 400
         
-    user = User.query.filter_by(email=data['email']).first()
+    user = User.query.filter(db.func.lower(User.email) == data['email'].lower()).first()
     
     if not user or not user.check_password(data['password']):
         return jsonify({'message': 'Invalid email or password!'}), 401
@@ -75,7 +80,7 @@ def login():
         'exp': datetime.utcnow() + timedelta(hours=24)
     }
     
-    token = jwt.encode(token_payload, os.environ.get('JWT_SECRET_KEY'), algorithm='HS256')
+    token = jwt.encode(token_payload, os.environ.get('JWT_SECRET'), algorithm='HS256')  # Updated to JWT_SECRET
     
     # Log the login activity
     log = AuditLog(
@@ -139,7 +144,7 @@ def signup():
         'exp': datetime.utcnow() + timedelta(hours=24)
     }
     
-    token = jwt.encode(token_payload, os.environ.get('JWT_SECRET_KEY'), algorithm='HS256')
+    token = jwt.encode(token_payload, os.environ.get('JWT_SECRET'), algorithm='HS256')
     
     return jsonify({
         'message': 'User registered successfully!',
@@ -151,9 +156,14 @@ def signup():
 @bp.route('/users', methods=['GET'])
 @token_required
 @admin_required
-def get_users():
-    users = User.query.all()
-    return jsonify([user.to_dict() for user in users]), 200
+def get_users(current_user):
+    try:
+        print(f"Admin Access: {current_user.email}")  # Debug log
+        users = User.query.all()
+        return jsonify([user.to_dict() for user in users]), 200
+    except Exception as e:
+        print(f"Error fetching users: {str(e)}")  # Debug log
+        return jsonify({'message': 'Failed to fetch users', 'error': str(e)}), 500
 
 @bp.route('/users/<user_id>', methods=['GET'])
 @token_required
@@ -247,9 +257,13 @@ def delete_user(current_user, user_id):
 # Role management routes
 @bp.route('/roles', methods=['GET'])
 @token_required
+@admin_required
 def get_roles(current_user):
-    roles = Role.query.all()
-    return jsonify([role.to_dict() for role in roles]), 200
+    try:
+        roles = Role.query.all()
+        return jsonify([role.to_dict() for role in roles]), 200
+    except Exception as e:
+        return jsonify({'message': 'Failed to fetch roles', 'error': str(e)}), 500
 
 @bp.route('/roles', methods=['POST'])
 @token_required
@@ -353,8 +367,6 @@ def create_invitation(current_user):
     db.session.commit()
     
     # In a real application, you would send an email with the invitation link
-    # The link would contain the token and direct to a page where the user can set their password
-    
     invitation_link = f"{request.host_url}accept-invitation?token={token}"
     
     return jsonify({
@@ -379,10 +391,8 @@ def list_invitations(current_user):
 @admin_required
 def revoke_invitation(current_user, invitation_id):
     invitation = UserInvitation.query.get(invitation_id)
-    
     if not invitation:
         return jsonify({'message': 'Invitation not found!'}), 404
-        
     # Instead of deleting, we'll set the expiration to now (effectively revoking it)
     invitation.expires_at = datetime.utcnow()
     db.session.commit()
@@ -411,13 +421,10 @@ def accept_invitation():
         
     # Find the invitation
     invitation = UserInvitation.query.filter_by(token=data['token']).first()
-    
     if not invitation:
         return jsonify({'message': 'Invalid invitation token!'}), 404
-        
     if invitation.used:
         return jsonify({'message': 'This invitation has already been used!'}), 400
-        
     if invitation.is_expired():
         return jsonify({'message': 'This invitation has expired!'}), 400
     
@@ -462,7 +469,7 @@ def accept_invitation():
         'exp': datetime.utcnow() + timedelta(hours=24)
     }
     
-    token = jwt.encode(token_payload, os.environ.get('JWT_SECRET_KEY'), algorithm='HS256')
+    token = jwt.encode(token_payload, os.environ.get('JWT_SECRET'), algorithm='HS256')
     
     return jsonify({
         'message': 'Account created successfully!',

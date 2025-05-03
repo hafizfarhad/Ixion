@@ -1,20 +1,13 @@
-FROM node:19-alpine AS base
-
-# Set working directory
+# frontend/Dockerfile
+FROM node:20-alpine as builder
 WORKDIR /app
-
-# Copy package files first for better caching
-COPY package.json package-lock.json* ./
-
-# Install dependencies
-RUN npm install
-
-# Copy the rest of the code
+COPY package*.json ./
+RUN npm install  # Use npm install instead of npm ci if package-lock.json is missing
 COPY . .
+RUN npm run build
 
-# Set environment variables
-ENV NEXT_TELEMETRY_DISABLED=1
-ENV NODE_ENV=development
-
-# Use development mode for faster reloading during testing
-CMD ["npm", "run", "dev"]
+FROM nginx:alpine
+COPY --from=builder /app/build /usr/share/nginx/html
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]

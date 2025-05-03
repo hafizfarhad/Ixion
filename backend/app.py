@@ -15,7 +15,7 @@ load_dotenv()
 
 app = Flask(__name__)
 CORS(app)
-app.config['JWT_SECRET'] = os.getenv('JWT_SECRET', 'fallback_secret_here')
+app.config['JWT_SECRET'] = os.getenv('JWT_SECRET', 'fallback_secret_here')  # Standardized to JWT_SECRET
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'postgresql://iamuser:iampass@localhost/ixios_db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db.init_app(app)
