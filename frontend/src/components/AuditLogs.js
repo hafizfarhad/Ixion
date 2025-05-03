@@ -13,7 +13,7 @@ function AuditLogs() {
   const fetchAuditLogs = async () => {
     setLoading(true);
     try {
-      const data = await apiService.getAuditLogs();
+      const data = await apiService.getAuditLogs(); // Corrected method name
       setLogs(data);
       setError('');
     } catch (err) {

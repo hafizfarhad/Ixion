@@ -637,3 +637,13 @@ def create_permission(current_user):
         'message': 'Permission created successfully!',
         'permission': new_permission.to_dict()
     }), 201
+
+@bp.route('/audit-logs', methods=['GET'])
+@token_required
+@admin_required
+def get_audit_logs(current_user):
+    try:
+        logs = AuditLog.query.order_by(AuditLog.timestamp.desc()).all()
+        return jsonify([log.to_dict() for log in logs]), 200
+    except Exception as e:
+        return jsonify({'message': 'Failed to fetch audit logs', 'error': str(e)}), 500

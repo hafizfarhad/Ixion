@@ -300,6 +300,22 @@ const apiService = {
     
     return response.json();
   },
+
+  async getAuditLogs() {
+    const token = localStorage.getItem('token');
+    const response = await fetch(`${API_BASE_URL}/audit-logs`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to fetch audit logs');
+    }
+
+    return response.json();
+  },
 };
 
 export default apiService;
