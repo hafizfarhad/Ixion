@@ -313,7 +313,12 @@ def create_user(current_user):
 def get_roles(current_user):
     try:
         roles = Role.query.all()
-        return jsonify([role.to_dict() for role in roles]), 200
+        return jsonify([{
+            'id': str(role.id),  # Ensure role ID is included
+            'name': role.name,
+            'description': role.description,
+            'permissions': [permission.to_dict() for permission in role.permissions]
+        } for role in roles]), 200
     except Exception as e:
         return jsonify({'message': 'Failed to fetch roles', 'error': str(e)}), 500
 
@@ -430,69 +435,72 @@ def delete_role(current_user, role_id):
     return jsonify({'message': 'Role deleted successfully!'}), 200
 
 # Invitation System Routes
+from uuid import UUID
+
 @bp.route('/invitations', methods=['POST'])
 @token_required
 @admin_required
 def create_invitation(current_user):
     data = request.get_json()
     
-    if not data or not data.get('email'):
-        return jsonify({'message': 'Email is required!'}), 400
+    if not data or not data.get('email') or not data.get('password'):
+        return jsonify({'message': 'Email and password are required!'}), 400
         
     # Check if user with this email already exists
     existing_user = User.query.filter_by(email=data['email']).first()
     if existing_user:
         return jsonify({'message': 'User with this email already exists!'}), 409
     
-    # Check if there's already an active invitation for this email
-    existing_invitation = UserInvitation.query.filter_by(
-        email=data['email'], 
-        used=False
-    ).filter(UserInvitation.expires_at > datetime.utcnow()).first()
+    # Validate and convert role_ids to UUIDs
+    role_ids = data.get('role_ids', [])
+    try:
+        role_ids = [UUID(role_id) for role_id in role_ids]
+    except ValueError:
+        return jsonify({'message': 'Invalid role ID(s) provided!'}), 400
     
-    if existing_invitation:
-        return jsonify({'message': 'An invitation has already been sent to this email!'}), 409
-    
-    # Generate secure token
-    token = secrets.token_urlsafe(32)
-    
-    # Set expiration (default: 7 days)
-    expires_at = datetime.utcnow() + timedelta(days=7)
-    
-    # Create invitation
-    invitation = UserInvitation(
+    # Create the user directly
+    new_user = User(
         email=data['email'],
         first_name=data.get('first_name'),
         last_name=data.get('last_name'),
-        token=token,
-        role_id=data.get('role_id'),
-        invited_by=current_user.id,
-        expires_at=expires_at
+        is_active=True,
+        is_admin=False  # Default to non-admin; can be changed by admins later
     )
+    new_user.set_password(data['password'])
     
-    db.session.add(invitation)
+    # Assign roles if provided
+    if role_ids:
+        roles = Role.query.filter(Role.id.in_(role_ids)).all()
+        new_user.roles = roles
+    
+    db.session.add(new_user)
     db.session.commit()
     
-    # Log the invitation
+    # Log the creation
     log = AuditLog(
         user_id=current_user.id,
-        action='invite',
-        resource_type='user_invitation',
-        resource_id=str(invitation.id),
-        details=f"Invited {data['email']}",
+        action='create',
+        resource_type='user',
+        resource_id=str(new_user.id),
+        details=f"Created user {data['email']} via invitation",
         ip_address=request.remote_addr,
         user_agent=request.headers.get('User-Agent')
     )
     db.session.add(log)
     db.session.commit()
     
-    # In a real application, you would send an email with the invitation link
-    invitation_link = f"{request.host_url}accept-invitation?token={token}"
+    # Generate JWT token for the new user
+    token_payload = {
+        'user_id': str(new_user.id),
+        'is_admin': new_user.is_admin,
+        'exp': datetime.utcnow() + timedelta(hours=24)
+    }
+    token = jwt.encode(token_payload, os.environ.get('JWT_SECRET'), algorithm='HS256')
     
     return jsonify({
-        'message': 'Invitation sent successfully!',
-        'invitation': invitation.to_dict(),
-        'invitation_link': invitation_link  # For testing; in production, this would be sent by email
+        'message': 'User invited and created successfully!',
+        'user': new_user.to_dict(),
+        'token': token
     }), 201
 
 @bp.route('/invitations', methods=['GET'])

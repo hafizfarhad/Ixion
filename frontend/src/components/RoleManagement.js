@@ -25,7 +25,8 @@ function RoleManagement() {
     setLoading(true);
     try {
       const data = await apiService.getRoles();
-      setRoles(data);
+      console.log(data); // Debug: Log the fetched roles
+      setRoles(data); // Role data now includes IDs
       setError('');
     } catch (err) {
       setError(err.message);
@@ -166,6 +167,7 @@ function RoleManagement() {
       <table>
         <thead>
           <tr>
+            <th>ID</th> {/* Add a column for Role ID */}
             <th>Name</th>
             <th>Description</th>
             <th>Actions</th>
@@ -174,6 +176,7 @@ function RoleManagement() {
         <tbody>
           {roles.map((role) => (
             <tr key={role.id}>
+              <td>{role.id}</td> {/* Display Role ID */}
               <td>{role.name}</td>
               <td>{role.description}</td>
               <td>

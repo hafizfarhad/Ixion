@@ -143,7 +143,7 @@ const apiService = {
       throw new Error(errorData.message || 'Failed to fetch roles');
     }
     
-    return response.json();
+    return response.json(); // Ensure role IDs are included in the response
   },
   
   async createRole(roleData) {
@@ -286,6 +286,25 @@ const apiService = {
       throw new Error(errorData.message || 'Failed to revoke invitation');
     }
     
+    return response.json();
+  },
+
+  async inviteAndCreateUser(userData) {
+    const token = localStorage.getItem('token');
+    const response = await fetch(`${API_BASE_URL}/invitations`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify(userData),
+    });
+  
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to invite user');
+    }
+  
     return response.json();
   },
   

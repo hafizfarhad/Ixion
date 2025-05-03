@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import apiService from '../api/apiService';
 
-function InviteUser() {
+function InviteUser({ onLogin }) {
   const [formData, setFormData] = useState({
     email: '',
     first_name: '',
     last_name: '',
-    role_id: ''
+    password: '',
+    role_ids: []
   });
   const [successMessage, setSuccessMessage] = useState('');
   const [error, setError] = useState('');
@@ -22,17 +23,24 @@ function InviteUser() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await apiService.inviteUser(formData);
-      setSuccessMessage('Invitation sent successfully!');
-      setError('');
-      setFormData({
-        email: '',
-        first_name: '',
-        last_name: '',
-        role_id: ''
-      });
+      const response = await apiService.inviteAndCreateUser(formData);
+      if (response && response.user && response.token) {
+        const { user, token } = response;
+        setSuccessMessage('User invited and created successfully!');
+        setError('');
+        setFormData({
+          email: '',
+          first_name: '',
+          last_name: '',
+          password: '',
+          role_ids: []
+        });
+        onLogin(user, token); // Log in the newly created user
+      } else {
+        throw new Error('Invalid response from server');
+      }
     } catch (err) {
-      setError(err.message);
+      setError(err.message || 'An error occurred');
       setSuccessMessage('');
     }
   };
@@ -72,15 +80,30 @@ function InviteUser() {
           />
         </div>
         <div>
-          <label>Role ID:</label>
+          <label>Password:</label>
           <input
-            type="text"
-            name="role_id"
-            value={formData.role_id}
+            type="password"
+            name="password"
+            value={formData.password}
             onChange={handleChange}
+            required
           />
         </div>
-        <button type="submit">Send Invitation</button>
+        <div>
+          <label>Role IDs (comma-separated):</label>
+          <input
+            type="text"
+            name="role_ids"
+            value={formData.role_ids}
+            onChange={(e) =>
+              setFormData({
+                ...formData,
+                role_ids: e.target.value.split(',').map((id) => id.trim())
+              })
+            }
+          />
+        </div>
+        <button type="submit">Invite User</button>
       </form>
     </div>
   );

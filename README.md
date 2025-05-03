@@ -1,504 +1,568 @@
-# Ixion: Identity and Access Management System
-
-## Setup Instructions
-
-### Frontend
-`npx create-next-app@latest frontend`
-
-`npm install axios`
-
-`npm install react-icons`
-
-`npm install @headlessui/react`
-
-`npm install recharts` (Required for IAM dashboard visualizations)
-
-### Backend
-__venv:__
-
-`pip install flask`
-`pip install flask-cors`
-
-`pip install python-dotenv pyjwt`
-
-`pip install bcrypt`
-
-`pip install flask-sqlalchemy psycopg2-binary`
-
-
-### Database
-
-`sudo systemctl status postgresql`
-
-`sudo systemctl start postgresql`
-
-`sudo systemctl start postgresql`
-
-`sudo -u postgres createdb ixios_db`
-
-`sudo -u postgres psql -c "CREATE USER iamuser WITH PASSWORD 'iampass';"`
-
-`sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE ixios_db TO iamuser;"`
-
-`sudo -u postgres psql -c "ALTER USER iamuser WITH SUPERUSER;"`
-
-`psql -U iamuser -d ixios_db -c "SELECT * FROM user;"`
-
-### To run docker-compose.yml
-
-`sudo docker-compose build --no-cache`
-
-`sudo docker-compose up -d`
-
-`sudo docker ps -a`
-
-`sudo docker-compose down -v`
-
-## IAM Dashboard Implementation Documentation
-
-### 1. Data Flow Architecture
-
-The Ixion IAM system implements a structured data flow between the frontend components and backend API:
-
-#### Authentication Flow
-1. **User Login**:
-   - Frontend sends credentials to `/api/login` endpoint
-   - Backend validates credentials and returns JWT token
-   - Token is stored in localStorage via `useAuth` hook
-   - Auth context updates with user data
-
-2. **Auth State Management**:
-   - `AuthProvider` wraps the application to provide auth context
-   - Components access auth state via `useAuth()` hook
-   - Token is included in all API requests via axios interceptors
-
-#### Dashboard Data Flow
-
-**Admin Dashboard Flow**:
-1. Dashboard component mounts and checks user role
-2. `useIamData` hook initiates parallel data fetching:
-   - User status distribution → `/api/iam/users/status-distribution`
-   - Permission usage data → `/api/iam/permissions/usage`
-   - Risk scores → `/api/iam/security/risk-score`
-   - Security metrics → `/api/iam/security/metrics`
-   - Activity logs → `/api/iam/activities`
-   - Access requests → `/api/iam/access-requests`
-3. Data is passed to respective visualization components
-4. Periodic refresh occurs based on configured intervals
-
-**User Dashboard Flow**:
-1. Dashboard component mounts and identifies non-admin user
-2. `useIamData` hook fetches user-specific data:
-   - User's activities → `/api/iam/activities/user/{user_id}`
-   - User's access requests → `/api/iam/access-requests/user/{user_id}`
-   - User's risk score → `/api/iam/security/user-risk/{user_id}`
-3. Data is rendered in user-focused interface components
-
-#### Error Handling Flow
-1. API requests throw exceptions for network/auth errors
-2. `useIamData` hook captures errors in state
-3. Components conditionally render error states
-4. Automatic retry logic attempts to recover from transient failures
-
-### 2. IAM Component Documentation
-
-#### Authentication Components
-
-##### `useAuth` Hook
-**Purpose**: Central authentication management for the application
-**Location**: `/frontend/src/hooks/useAuth.ts`
-**Features**:
-- User state management with TypeScript interfaces
-- JWT token handling with secure storage
-- Role-based access control helpers
-- Permission checking functionality
-
-**Example Usage**:
-```typescript
-const { user, isAdmin, hasPermission, login, logout } = useAuth();
-
-// Role-based rendering
-{isAdmin && <AdminOnlyComponent />}
-
-// Permission-based access
-{hasPermission('user:create') && <CreateUserButton />}
-```
-
-#### IAM-Specific Visualization Components
-
-##### `UserStatusWidget`
-**Purpose**: Display distribution of user account statuses
-**Location**: `/frontend/src/components/IAM/UserStatusWidget.tsx`
-**Props**:
-- `data`: Array of status objects with name, value, and color
-- `title`: Optional widget title
-
-**Data Structure**:
-```typescript
-{
-  name: string;    // Status name (e.g., "Active")
-  value: number;   // Count of users with this status
-  color: string;   // Color code for the status
-}
-```
-
-##### `PermissionHeatmap`
-**Purpose**: Visualize role-permission relationships and usage patterns
-**Location**: `/frontend/src/components/IAM/PermissionHeatmap.tsx`
-**Props**:
-- `data`: Array of role-permission-value mappings
-- `roles`: Array of role names
-- `permissions`: Array of permission names
-- `title`: Optional widget title
-
-**Data Structure**:
-```typescript
-{
-  role: string;        // Role name
-  permission: string;  // Permission name
-  value: number;       // Usage intensity (0-1)
-}
-```
-
-##### `RiskScoreGauge`
-**Purpose**: Display security risk scores with historical comparison
-**Location**: `/frontend/src/components/IAM/RiskScoreGauge.tsx`
-**Props**:
-- `score`: Current risk score (0-100)
-- `previousScore`: Optional previous score for trend comparison
-- `threshold`: Object defining low/medium/high thresholds
-- `title`: Optional widget title
-
-**Data Structure**:
-```typescript
-{
-  score: number;
-  previousScore?: number;
-  threshold: {
-    low: number;
-    medium: number;
-    high: number;
-  }
-}
-```
-
-##### `ActivityTimeline`
-**Purpose**: Chronological display of user activities with status indicators
-**Location**: `/frontend/src/components/IAM/ActivityTimeline.tsx`
-**Props**:
-- `activities`: Array of activity items
-- `title`: Optional timeline title
-- `maxItems`: Maximum items to display
-- `showViewAll`: Whether to show "View All" button
-- `onViewAll`: Callback for view all action
-
-**Data Structure**:
-```typescript
-{
-  id: string | number;
-  user: string;
-  action: string;
-  resource: string;
-  time: string;
-  status: 'success' | 'warning' | 'danger' | 'info';
-  details?: string;
-}
-```
-
-#### Data Fetching Components
-
-##### `useIamData` Hook
-**Purpose**: Standardized data fetching with error handling for IAM components
-**Location**: `/frontend/src/hooks/useIamData.ts`
-**Features**:
-- TypeScript generics for type-safe data fetching
-- Automatic JWT token inclusion
-- Loading/error state management
-- Configurable refresh intervals
-- Manual refetch capability
-
-**Example Usage**:
-```typescript
-const { data, isLoading, error, refetch } = useIamData<UserStatusDistribution>({
-  endpoint: 'http://localhost:5000/api/iam/users/status-distribution',
-  initialData: { active: 0, inactive: 0, suspended: 0, locked: 0, pending: 0 },
-  refreshInterval: 60000, // Refresh every minute
-});
-```
-
-### 3. Access Control Implementation
-
-#### Role-Based Access Control
-
-The Ixion dashboard implements role-based access control at multiple levels:
-
-##### 1. Route-Level RBAC (Frontend)
-```typescript
-// Dashboard component with role-based rendering
-export default function Dashboard() {
-  const { user, loading, isAdmin } = useAuth();
-  
-  // Only show certain links based on user role
-  const filteredLinks = isAdmin 
-    ? sidebarLinks 
-    : sidebarLinks.filter(link => 
-        !['/dashboard/users', '/dashboard/roles'].includes(link.href)
-      );
-      
-  // Conditional dashboard rendering based on role
-  return (
-    // ...
-    <main>
-      {isAdmin ? <AdminDashboard /> : <UserDashboard />}
-    </main>
-    // ...
-  );
-}
-```
-
-##### 2. API-Level RBAC (Backend)
-```python
-# Decorator to check admin status
-def admin_required(f):
-    @wraps(f)
-    def decorated(current_user, *args, **kwargs):
-        if not current_user.is_admin:
-            return jsonify({"error": "Admin privileges required"}), 403
-        return f(current_user, *args, **kwargs)
-    return decorated
-
-# Admin-only endpoint example
-@iam_bp.route('/users/status-distribution', methods=['GET'])
-@token_required
-@admin_required
-def get_user_status_distribution(current_user):
-    # Admin-only logic here
-```
-
-##### 3. Data-Level Access Control
-```python
-# User Activity (User-specific data access control)
-@iam_bp.route('/activities/user/<int:user_id>', methods=['GET'])
-@token_required
-def get_user_activities(current_user, user_id):
-    # Only allow users to view their own activities or admins to view any
-    if not current_user.is_admin and current_user.id != user_id:
-        return jsonify({"error": "Unauthorized"}), 403
-    
-    # Get the user
-    user = User.query.get(user_id)
-    if not user:
-        return jsonify({"error": "User not found"}), 404
-    
-    # Return data for authorized request
-```
-
-#### Permission-Based Access Control
-
-The system also supports granular permission-based access control:
-
-```typescript
-// In components:
-const { hasPermission } = useAuth();
-
-// Conditional rendering based on specific permissions
-{hasPermission('user:create') && (
-  <button className="create-user-btn">Create User</button>
-)}
-
-// Backend permission enforcement:
-def permission_required(permission):
-    def decorator(f):
-        @wraps(f)
-        def decorated(current_user, *args, **kwargs):
-            user_permissions = get_user_permissions(current_user)
-            if permission not in user_permissions:
-                return jsonify({"error": f"Required permission: {permission}"}), 403
-            return f(current_user, *args, **kwargs)
-        return decorated
-    return decorator
-```
-
-### 4. IAM-Specific Security Considerations
-
-#### Token Security
-- **Current Implementation**: JWT tokens stored in localStorage
-- **Security Risk**: Vulnerable to XSS attacks
-- **Recommended Enhancement**: 
-  ```typescript
-  // Use HttpOnly cookies for token storage instead
-  // Backend:
-  @app.route('/api/login', methods=['POST'])
-  def login():
-      # Authenticate user
-      response = jsonify({"success": True})
-      response.set_cookie('auth_token', token, httponly=True, secure=True)
-      return response
-      
-  // Frontend:
-  const login = async (email, password) => {
-    try {
-      // Send credentials
-      await axios.post('/api/login', { email, password }, {
-        withCredentials: true  // Important for cookie handling
-      });
-      // Token is now in HttpOnly cookie, not accessible to JS
-    } catch (err) {
-      // Handle error
-    }
-  };
-  ```
-
-#### Secure API Implementation
-- **Current Implementation**: Direct API calls to specific endpoints
-- **Security Risk**: Potential for CSRF attacks
-- **Recommended Enhancement**: 
-  - Implement CSRF tokens for state-changing operations
-  - Add rate limiting on authentication endpoints
-  - Implement API versioning for backward compatibility
-
-#### Session Management
-- **Current Implementation**: Basic JWT validation
-- **Security Risk**: No token revocation mechanism
-- **Recommended Enhancement**:
-  ```typescript
-  // Add token blacklisting/revocation
-  // Backend:
-  revoked_tokens = set()
-  
-  @app.route('/api/logout', methods=['POST'])
-  @token_required
-  def logout(current_user):
-      token = get_token_from_request()
-      revoked_tokens.add(token)
-      return jsonify({"success": True})
-  
-  def token_required(f):
-      @wraps(f)
-      def decorated(*args, **kwargs):
-          token = get_token_from_request()
-          if token in revoked_tokens:
-              return jsonify({"error": "Token revoked"}), 401
-          # Continue with normal token validation
-      return decorated
-  ```
-
-#### Sensitive Data Exposure
-- **Current Implementation**: Full user data fetched in some endpoints
-- **Security Risk**: Potential exposure of sensitive user attributes
-- **Recommended Enhancement**:
-  - Implement data masking for sensitive fields
-  - Create separate DTOs (Data Transfer Objects) for different views
-  - Add field-level access control
-
-#### Activity Monitoring
-- **Current Implementation**: Basic activity logging
-- **Security Enhancement**:
-  - Implement real-time security alerting for suspicious activities
-  - Add anomaly detection for access patterns
-  - Create automated response workflows for security incidents
-
-#### Multi-Factor Authentication
-- **Current Implementation**: MFA status tracking only
-- **Security Enhancement**:
-  ```typescript
-  // Frontend MFA flow implementation
-  const login = async (email, password) => {
-    const { requiresMfa, mfaToken } = await authService.login(email, password);
-    
-    if (requiresMfa) {
-      setMfaRequired(true);
-      setMfaToken(mfaToken);
-    } else {
-      // Normal login success flow
-    }
-  };
-  
-  const completeMfa = async (code) => {
-    const { token, user } = await authService.verifyMfa(mfaToken, code);
-    // Complete login after MFA
-  };
-  ```
-
-## Implementation Roadmap
-
-1. **Immediate Security Enhancements**:
-   - Switch from localStorage to HttpOnly cookies
-   - Implement proper CSRF protection
-   - Add rate limiting on authentication endpoints
-
-2. **Advanced IAM Features**:
-   - Multi-factor authentication implementation
-   - Just-in-time access provisioning
-   - Automated access recertification workflows
-
-3. **Monitoring Capabilities**:
-   - Real-time security alerts
-   - Anomaly detection for access patterns
-   - Access usage analytics dashboard
-
-4. **Compliance Features**:
-   - Compliance report generation
-   - Audit trail enhancements
-   - Regulatory framework mappings
-
-
-
-## Workflow
+# IXIOS IAM - Identity and Access Management System
+
+![IXIOS IAM Logo](https://via.placeholder.com/200x80?text=IXIOS+IAM)
+
+IXIOS IAM is a comprehensive Identity and Access Management solution designed to provide secure authentication, authorization, and user management for modern applications. Built with Flask and React, it offers a robust and scalable approach to managing user identities and permissions.
+
+## Table of Contents
+- [Features](#features)
+- [System Architecture](#system-architecture)
+- [Component Diagrams](#component-diagrams)
+- [Flow Diagrams](#flow-diagrams)
+- [Database Schema](#database-schema)
+- [API Documentation](#api-documentation)
+- [Installation](#installation)
+  - [Backend Setup](#backend-setup)
+  - [Frontend Setup](#frontend-setup)
+- [Configuration](#configuration)
+- [Usage](#usage)
+- [Security Considerations](#security-considerations)
+- [Development Roadmap](#development-roadmap)
+- [Contributing](#contributing)
+- [License](#license)
+
+## Features
+
+IXIOS IAM provides a comprehensive set of identity and access management features:
+
+### Authentication
+- **User Login/Signup**: Secure email and password authentication
+- **JWT Token Authentication**: Stateless authentication using JSON Web Tokens
+- **Session Management**: Control and manage user sessions
+
+### User Management
+- **User CRUD Operations**: Complete lifecycle management for user accounts
+- **User Profile Management**: Self-service profile updates
+- **User Status Control**: Activate/deactivate user accounts
+
+### Role-Based Access Control (RBAC)
+- **Role Management**: Create, update, and delete roles
+- **Permission Assignment**: Assign granular permissions to roles
+- **User-Role Assignment**: Associate users with appropriate roles
+
+### Invitation System
+- **User Invitations**: Invite new users to the system
+- **Invitation Tracking**: Monitor pending and used invitations
+- **Secure Signup Process**: Guided registration through invitation links
+
+### Security Features
+- **Password Hashing**: Secure password storage using bcrypt
+- **Rate Limiting**: Protection against brute force attacks
+- **Comprehensive Audit Logging**: Track all security-relevant actions
+
+### Administration
+- **Admin Dashboard**: Web interface for system administration
+- **User Administration**: Manage users, roles, and permissions
+- **Access Request Workflow**: Process and approve access requests
+
+## System Architecture
+
+IXIOS IAM follows a modern web application architecture with separated frontend and backend components.
+
+### High-Level Architecture
 
 ```
-flowchart TD
-    subgraph "User Onboarding"
-        A1[HR/Manager] -->|Creates user account| B1[Admin Dashboard]
-        B1 -->|Sets initial role| C1[User Repository]
-        C1 -->|Sends credentials| D1[New User]
-        D1 -->|First login| E1[Force password change]
-        E1 -->|Complete setup| F1[User Dashboard]
-    end
-
-    subgraph "Daily User Operations"
-        U1[End User] -->|Login| U2[Authentication Service]
-        U2 -->|Validates credentials| U3{Valid?}
-        U3 -->|Yes| U4[User Dashboard]
-        U3 -->|No| U5[Login error]
-        U4 -->|View resources| U6[Application Portal]
-        U4 -->|Manage profile| U7[Profile Management]
-        U4 -->|Request access| U8[Access Request]
-        U8 -->|Submit request| U9[Request Workflow]
-    end
-
-    subgraph "Administrator Activities"
-        A2[Admin] -->|Login| A3[Admin Dashboard]
-        A3 -->|User Management| A4[User Admin]
-        A3 -->|Role Management| A5[Role Admin]
-        A3 -->|Review reports| A6[Audit Logs]
-        A3 -->|Configure system| A7[System Settings]
-        A3 -->|Review requests| A8[Access Requests]
-        A8 -->|Approve/Deny| A9[Update permissions]
-    end
-
-    subgraph "Security Enforcement"
-        S1[User Request] -->|Access resource| S2[Authorization Service]
-        S2 -->|Check permissions| S3{Authorized?}
-        S3 -->|Yes| S4[Grant Access]
-        S3 -->|No| S5[Access Denied]
-        S4 & S5 -->|Log activity| S6[Audit Logging]
-    end
-
-    subgraph "Access Request Flow"
-        R1[User] -->|Request access| R2[Create request]
-        R2 -->|Submit| R3[Pending Request]
-        R3 -->|Notify| R4[Admin/Manager]
-        R4 -->|Review| R5{Decision}
-        R5 -->|Approve| R6[Update permissions]
-        R5 -->|Deny| R7[Rejection notice]
-        R6 & R7 -->|Notify user| R8[User notification]
-        R6 -->|Automatic provisioning| R9[Access granted]
-    end
-
-    %% Connections between subgraphs
-    F1 -.-> U1
-    U9 -.-> R1
-    A9 -.-> R6
-    S6 -.-> A6
+┌─────────────┐     ┌─────────────┐     ┌─────────────┐
+│             │     │             │     │             │
+│  Frontend   │────▶│  Backend    │────▶│  Database   │
+│  (React)    │     │  (Flask)    │     │ (PostgreSQL)│
+│             │     │             │     │             │
+└─────────────┘     └─────────────┘     └─────────────┘
 ```
+
+### Backend Architecture
+
+The Flask backend is organized into the following components:
+
+- **Routes**: API endpoints and request handling
+- **Models**: Data models and database schema
+- **Authentication**: JWT token generation and validation
+- **Authorization**: Permission checking and access control
+- **Services**: Business logic implementation
+
+### Frontend Architecture
+
+The React frontend consists of:
+
+- **Components**: Reusable UI elements
+- **Pages**: Screen implementations
+- **Services**: API communication
+- **Store**: State management
+- **Auth**: Authentication handling
+
+## Component Diagrams
+
+### Backend Components
+
+```
+┌───────────────────────────────────────────────────────┐
+│                    Flask Application                   │
+│                                                       │
+│  ┌───────────┐   ┌───────────┐    ┌───────────────┐   │
+│  │           │   │           │    │               │   │
+│  │   Routes  │──▶│  Services │───▶│     Models    │   │
+│  │           │   │           │    │               │   │
+│  └───────────┘   └───────────┘    └───────────────┘   │
+│        │                                 ▲            │
+│        ▼                                 │            │
+│  ┌───────────┐                    ┌─────────────┐     │
+│  │           │                    │             │     │
+│  │ Middleware│───────────────────▶│  Database   │     │
+│  │           │                    │             │     │
+│  └───────────┘                    └─────────────┘     │
+│                                                       │
+└───────────────────────────────────────────────────────┘
+```
+
+### Frontend Components
+
+```
+┌───────────────────────────────────────────────────────┐
+│                   React Application                    │
+│                                                       │
+│  ┌───────────┐   ┌───────────┐    ┌───────────────┐   │
+│  │           │   │           │    │               │   │
+│  │   Pages   │──▶│Components │◀───│   Context     │   │
+│  │           │   │           │    │               │   │
+│  └───────────┘   └───────────┘    └───────────────┘   │
+│        │                ▲                ▲            │
+│        ▼                │                │            │
+│  ┌───────────┐    ┌────────────┐   ┌────────────┐     │
+│  │           │    │            │   │            │     │
+│  │  Routing  │    │  Services  │──▶│Auth Service│     │
+│  │           │    │            │   │            │     │
+│  └───────────┘    └────────────┘   └────────────┘     │
+│                          │                            │
+│                          ▼                            │
+│                   ┌─────────────┐                     │
+│                   │             │                     │
+│                   │   API       │                     │
+│                   │             │                     │
+│                   └─────────────┘                     │
+│                                                       │
+└───────────────────────────────────────────────────────┘
+```
+
+## Flow Diagrams
+
+### Authentication Flow
+
+```
+┌──────────┐          ┌──────────┐          ┌──────────┐
+│          │          │          │          │          │
+│  Client  │          │  Server  │          │ Database │
+│          │          │          │          │          │
+└────┬─────┘          └────┬─────┘          └────┬─────┘
+     │                     │                     │
+     │ 1. Login Request    │                     │
+     │ (email/password)    │                     │
+     │────────────────────▶│                     │
+     │                     │                     │
+     │                     │ 2. Query User       │
+     │                     │────────────────────▶│
+     │                     │                     │
+     │                     │ 3. Return User Data │
+     │                     │◀────────────────────│
+     │                     │                     │
+     │                     │ 4. Verify Password  │
+     │                     │                     │
+     │                     │ 5. Generate JWT     │
+     │                     │                     │
+     │ 6. Return JWT Token │                     │
+     │◀────────────────────│                     │
+     │                     │                     │
+     │ 7. Request with JWT │                     │
+     │────────────────────▶│                     │
+     │                     │                     │
+     │                     │ 8. Validate JWT     │
+     │                     │                     │
+     │ 9. Response         │                     │
+     │◀────────────────────│                     │
+     │                     │                     │
+```
+
+### User Creation Flow
+
+```
+┌──────────┐          ┌──────────┐          ┌──────────┐
+│          │          │          │          │          │
+│  Admin   │          │  Server  │          │ Database │
+│          │          │          │          │          │
+└────┬─────┘          └────┬─────┘          └────┬─────┘
+     │                     │                     │
+     │ 1. Create User      │                     │
+     │ Request             │                     │
+     │────────────────────▶│                     │
+     │                     │                     │
+     │                     │ 2. Validate Input   │
+     │                     │                     │
+     │                     │ 3. Hash Password    │
+     │                     │                     │
+     │                     │ 4. Insert User      │
+     │                     │────────────────────▶│
+     │                     │                     │
+     │                     │ 5. Return User ID   │
+     │                     │◀────────────────────│
+     │                     │                     │
+     │                     │ 6. Add Role         │
+     │                     │ Assignments         │
+     │                     │────────────────────▶│
+     │                     │                     │
+     │                     │ 7. Create           │
+     │                     │ Audit Log           │
+     │                     │────────────────────▶│
+     │                     │                     │
+     │ 8. Return Success   │                     │
+     │◀────────────────────│                     │
+     │                     │                     │
+```
+
+### Invitation Flow
+
+```
+┌──────────┐     ┌──────────┐     ┌──────────┐     ┌──────────┐
+│          │     │          │     │          │     │          │
+│  Admin   │     │  Server  │     │  Email   │     │  Invitee │
+│          │     │          │     │          │     │          │
+└────┬─────┘     └────┬─────┘     └────┬─────┘     └────┬─────┘
+     │                │                │                │
+     │ 1. Create      │                │                │
+     │ Invitation     │                │                │
+     │───────────────▶│                │                │
+     │                │                │                │
+     │                │ 2. Generate    │                │
+     │                │ Token          │                │
+     │                │                │                │
+     │                │ 3. Store       │                │
+     │                │ Invitation     │                │
+     │                │                │                │
+     │ 4. Return      │                │                │
+     │ Invitation Data│                │                │
+     │◀───────────────│                │                │
+     │                │                │                │
+     │                │ 5. Send Email  │                │
+     │                │───────────────▶│                │
+     │                │                │                │
+     │                │                │ 6. Deliver     │
+     │                │                │ Invitation     │
+     │                │                │───────────────▶│
+     │                │                │                │
+     │                │                │                │
+     │                │                │ 7. Access      │
+     │                │                │ Invitation Link│
+     │                │◀───────────────────────────────│
+     │                │                │                │
+     │                │ 8. Validate    │                │
+     │                │ Token          │                │
+     │                │                │                │
+     │                │ 9. Create User │                │
+     │                │ Account        │                │
+     │                │                │                │
+     │                │ 10. Return     │                │
+     │                │ JWT Token      │                │
+     │                │───────────────────────────────▶│
+     │                │                │                │
+```
+
+## Database Schema
+
+IXIOS IAM uses a relational database with the following key entities:
+
+### Entity Relationship Diagram
+
+```
+┌─────────────┐       ┌─────────────┐       ┌─────────────┐
+│    Users    │       │ User Roles  │       │    Roles    │
+├─────────────┤       ├─────────────┤       ├─────────────┤
+│ id          │       │ user_id     │       │ id          │
+│ email       │       │ role_id     │       │ name        │
+│ password    │◀─────▶│             │◀─────▶│ description │
+│ first_name  │       └─────────────┘       │ system_role │
+│ last_name   │                             └─────────────┘
+│ is_active   │                                    ▲
+│ is_admin    │                                    │
+│ created_at  │                                    │
+│ updated_at  │       ┌─────────────┐       ┌─────────────┐
+│ last_login  │       │    Role     │       │ Permissions │
+└─────────────┘       │ Permissions │       ├─────────────┤
+      ▲               ├─────────────┤       │ id          │
+      │               │ role_id     │       │ name        │
+      │               │ permission_id│◀─────▶│ description │
+      │               └─────────────┘       │ resource    │
+      │                                     │ action      │
+      │                                     └─────────────┘
+      │
+      │               ┌─────────────┐
+      │               │ Invitations │
+      │               ├─────────────┤
+      └──────────────▶│ id          │
+                      │ email       │
+                      │ token       │
+                      │ role_id     │
+                      │ invited_by  │
+                      │ used        │
+                      │ expires_at  │
+                      └─────────────┘
+                             ▲
+                             │
+      ┌─────────────┐        │
+      │ Audit Logs  │        │
+      ├─────────────┤        │
+      │ id          │        │
+      │ user_id     │◀───────┘
+      │ action      │
+      │ resource    │
+      │ resource_id │
+      │ details     │
+      │ ip_address  │
+      │ timestamp   │
+      └─────────────┘
+```
+
+## API Documentation
+
+IXIOS IAM exposes a RESTful API for authentication, user management, and access control.
+
+### Authentication Endpoints
+
+| Endpoint | Method | Description | Required Permissions |
+|----------|--------|-------------|---------------------|
+| `/api/auth/login` | POST | Authenticate user and return JWT token | None |
+| `/api/auth/signup` | POST | Register new user | None |
+| `/api/protected` | GET | Test protected route | Valid JWT |
+
+### User Management Endpoints
+
+| Endpoint | Method | Description | Required Permissions |
+|----------|--------|-------------|---------------------|
+| `/api/users` | GET | List all users | Admin |
+| `/api/users` | POST | Create new user | Admin |
+| `/api/users/:id` | GET | Get user details | Admin or Self |
+| `/api/users/:id` | PUT | Update user | Admin or Self |
+| `/api/users/:id` | DELETE | Delete user | Admin |
+
+### Role Management Endpoints
+
+| Endpoint | Method | Description | Required Permissions |
+|----------|--------|-------------|---------------------|
+| `/api/roles` | GET | List all roles | Admin |
+| `/api/roles` | POST | Create new role | Admin |
+| `/api/roles/:id` | PUT | Update role | Admin |
+| `/api/roles/:id` | DELETE | Delete role | Admin |
+
+### Permission Management Endpoints
+
+| Endpoint | Method | Description | Required Permissions |
+|----------|--------|-------------|---------------------|
+| `/api/permissions` | GET | List all permissions | Admin |
+| `/api/permissions` | POST | Create new permission | Admin |
+
+### Invitation Management Endpoints
+
+| Endpoint | Method | Description | Required Permissions |
+|----------|--------|-------------|---------------------|
+| `/api/invitations` | POST | Create invitation | Admin |
+| `/api/invitations` | GET | List active invitations | Admin |
+| `/api/invitations/:id` | DELETE | Revoke invitation | Admin |
+| `/api/accept-invitation` | POST | Accept invitation | None |
+
+### System Endpoints
+
+| Endpoint | Method | Description | Required Permissions |
+|----------|--------|-------------|---------------------|
+| `/api/system/status` | GET | Get system status | None |
+| `/api/audit-logs` | GET | Get audit logs | Admin |
+
+## Installation
+
+### Prerequisites
+
+- Python 3.9+
+- Node.js 14+
+- PostgreSQL 12+
+- Docker and Docker Compose (optional)
+
+### Backend Setup
+
+1. **Clone the repository**
+
+```bash
+git clone https://github.com/yourusername/ixios-iam.git
+cd ixios-iam/backend
+```
+
+2. **Create and activate a virtual environment**
+
+```bash
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+```
+
+3. **Install dependencies**
+
+```bash
+pip install -r requirements.txt
+```
+
+4. **Set environment variables**
+
+Create a `.env` file in the backend directory:
+
+```
+JWT_SECRET=your_secure_jwt_secret_key
+DATABASE_URL=postgresql://username:password@localhost/ixios_db
+ADMIN_EMAIL=admin@example.com
+ADMIN_PASSWORD=your_admin_password
+```
+
+5. **Initialize the database**
+
+```bash
+# Create the PostgreSQL database
+createdb ixios_db
+
+# Initialize database schema and default roles
+python app.py
+```
+
+6. **Run the backend server**
+
+```bash
+python app.py
+```
+
+The backend server will be available at http://localhost:5000.
+
+### Frontend Setup
+
+1. **Navigate to the frontend directory**
+
+```bash
+cd ../frontend
+```
+
+2. **Install dependencies**
+
+```bash
+npm install
+```
+
+3. **Configure API endpoint**
+
+Create a `.env` file in the frontend directory:
+
+```
+REACT_APP_API_URL=http://localhost:5000/api
+```
+
+4. **Run the frontend development server**
+
+```bash
+npm start
+```
+
+The frontend will be available at http://localhost:3000.
+
+### Docker Deployment
+
+For containerized deployment, use Docker Compose:
+
+```bash
+# From the project root
+docker-compose up -d
+```
+
+This will start both the frontend and backend services along with a PostgreSQL database.
+
+## Configuration
+
+### Environment Variables
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `JWT_SECRET` | Secret key for JWT token signing | fallback_secret_here |
+| `DATABASE_URL` | PostgreSQL connection string | postgresql://iamuser:iampass@localhost/ixios_db |
+| `ADMIN_EMAIL` | Default admin email | admin@ixion.com |
+| `ADMIN_PASSWORD` | Default admin password | admin123 |
+
+### Customizing Roles and Permissions
+
+The system initializes with default roles (admin, user) and permissions. To customize:
+
+1. Modify the `initialize_db()` function in `app.py`
+2. Add or modify permissions in the permissions list
+3. Update role-permission assignments
+
+## Usage
+
+### First-Time Setup
+
+1. Access the frontend application at http://localhost:3000
+2. Log in using the default admin credentials:
+   - Email: admin@ixion.com (or the value of `ADMIN_EMAIL`)
+   - Password: admin123 (or the value of `ADMIN_PASSWORD`)
+3. Change the default admin password immediately
+4. Create additional users through the admin interface or invitation system
+
+### User Management
+
+As an administrator, you can:
+- Create, view, update, and delete users
+- Assign roles to users
+- Activate/deactivate user accounts
+- Send invitations to new users
+
+### Role Management
+
+Administrators can:
+- Create and manage roles
+- Define permissions for each role
+- Assign roles to users
+
+### Permission Management
+
+Administrators can:
+- View available permissions
+- Create custom permissions
+- Assign permissions to roles
+
+## Security Considerations
+
+IXIOS IAM implements several security features, but consider the following best practices:
+
+1. **Use strong secrets**: Replace the default JWT secret with a strong, randomly generated value
+2. **Secure communications**: Use HTTPS in production environments
+3. **Regular updates**: Keep dependencies updated to patch security vulnerabilities
+4. **Password policies**: Implement password complexity requirements
+5. **Monitoring**: Review audit logs regularly for suspicious activities
+6. **Access review**: Periodically review user access rights
+
+## Development Roadmap
+
+Future enhancements planned for IXIOS IAM:
+
+- Multi-factor authentication (MFA)
+- Social login integration
+- Password reset functionality
+- Enhanced audit logging and reporting
+- User session management
+- API rate limiting improvements
+- Self-service access requests
+
+## Contributing
+
+Contributions are welcome! Please follow these steps:
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+---
+
+© 2025 IXIOS IAM Project
