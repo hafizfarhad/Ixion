@@ -1,8 +1,9 @@
-# frontend/Dockerfile
-FROM node:20-alpine as builder
+FROM node:20-alpine AS builder
 WORKDIR /app
+# Add environment variable to fix OpenSSL issue
+ENV NODE_OPTIONS=--openssl-legacy-provider
 COPY package*.json ./
-RUN npm install
+RUN npm ci --omit=dev
 COPY . .
 RUN npm run build
 
