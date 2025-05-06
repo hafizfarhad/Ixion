@@ -7,3 +7,4 @@ flask-sqlalchemy
 psycopg2-binary
 flask-limiter
 gunicorn
+flask_migrate

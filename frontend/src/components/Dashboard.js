@@ -26,7 +26,7 @@ function Dashboard({ user }) {
             <p><strong>Email:</strong> {user.email}</p>
             <p><strong>Name:</strong> {user.first_name} {user.last_name}</p>
             <p><strong>Admin:</strong> {user.is_admin ? 'Yes' : 'No'}</p>
-            <p><strong>Roles:</strong> {user.roles ? user.roles.join(', ') : 'None assigned'}</p>
+            <p><strong>Roles:</strong> {user.roles ? user.roles.map(role => role.name).join(', ') : 'None assigned'}</p>
           </div>
           
           {user.is_admin && (

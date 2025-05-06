@@ -117,7 +117,7 @@ def initialize_db():
         
         # Get admin credentials from environment variables
         admin_email = os.getenv('ADMIN_EMAIL', 'admin@ixion.com')
-        admin_password = os.getenv('ADMIN_PASSWORD', 'admin123')
+        admin_password = os.getenv('ADMIN_PASSWORD', 'securepassword123')
         
         # Always create or update the admin user with the latest credentials
         # This ensures the admin user is created with the correct environment variable values
@@ -158,7 +158,7 @@ def protected():
             app.config['JWT_SECRET'],
             algorithms=['HS256']
         )
-        return jsonify({"message": f"Hello {decoded['email']} (Role: {decoded['role']})"})
+        return jsonify({"message": f"Hello {decoded.get('email', 'Unknown')} (Role: {decoded.get('role', 'Unknown')})"})
     except jwt.ExpiredSignatureError:
         return jsonify({"error": "Token expired"}), 401
     except jwt.InvalidTokenError as e:
@@ -182,6 +182,8 @@ def system_status():
     })
 
 if __name__ == '__main__':
+    # Separate schema creation and data initialization
     with app.app_context():
-        initialize_db()  # Initialize database on startup
+        db.create_all()  # Create tables only
+        initialize_db()  # Populate initial data
     app.run(host='0.0.0.0', port=5000, debug=True)
