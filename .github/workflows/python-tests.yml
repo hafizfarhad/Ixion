@@ -58,9 +58,8 @@ jobs:
         ADMIN_EMAIL: admin@test.com
         ADMIN_PASSWORD: admin123_test
     
-    - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v3
+    - name: Upload coverage reports to Codecov
+      uses: codecov/codecov-action@v5
       with:
-        file: ./backend/coverage.xml
-        fail_ci_if_error: true
         token: ${{ secrets.CODECOV_TOKEN }}
+        slug: hafizfarhad/Ixion
