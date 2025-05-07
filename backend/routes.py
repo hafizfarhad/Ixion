@@ -81,7 +81,6 @@ def login():
     # Create JWT token
     token_payload = {
         'user_id': str(user.id),
-        'email': user.email,  # Include email in the token payload
         'is_admin': user.is_admin,
         'exp': datetime.utcnow() + timedelta(hours=24)
     }

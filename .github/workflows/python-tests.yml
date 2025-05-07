@@ -56,10 +56,4 @@ jobs:
         JWT_SECRET: test_secret_key
         DATABASE_URL: postgresql://iamuser:iampass@localhost/ixios_db
         ADMIN_EMAIL: admin@test.com
-        ADMIN_PASSWORD: admin123_test
-    
-    - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v3
-      with:
-        file: ./backend/coverage.xml
-        fail_ci_if_error: true
+        ADMIN_PASSWORD: admin123_test    
